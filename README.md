@@ -1,56 +1,37 @@
 # multiversefighters
 
 Animation
-Knee direction fixed. Every knee value in the pose table was positive, so legs bent forward like a bird's — that's why the run read as backwards. Knees are now always negative across every pose (run, jump tuck, crouch, dash, hurt).
-Real gait. Thigh swings fore/aft, knee tucks hardest on the rear swing so the heel kicks up behind, arms counter-swing against their own leg, two body bobs per cycle.
-Attacks went from 3 phases to 4 — anticipate → snap → follow-through → settle, each with its own easing curve. The overshoot pose is extrapolated from the windup→strike vector, so all 120 normals got follow-through without authoring new poses.
-Motion smear trails. Forward-kinematics solves the front hand/weapon tip each frame and feeds a 16-sample tapered ribbon.
-Squash & stretch on takeoff, landing (harder = more), and every strike frame.
-Secondary motion — hair and cape on a velocity-driven spring that lags the body; head counter-rotates against torso lean on every pose.
+Knee direction fix — every knee value was positive, so legs bent forward and the run read as backwards. Now negative across all poses.
+Proper gait — thigh swings fore/aft, knee tucks on the rear swing, arms counter-swing, two bobs per cycle.
+Attacks went 3 phases → 4: anticipate → snap → follow-through → settle. The overshoot is extrapolated from the windup→strike vector, so every attack got it without new poses.
+Motion smear trails — FK solves the weapon tip each frame into a tapered ribbon.
+Squash & stretch on takeoff, landing, and strike frames.
+Secondary motion — hair/cape spring that lags the body, head counter-rotates against torso lean.
 Root motion — attacks step into the hit.
-Idle runs two breathing frequencies plus a slow weight shift so the loop isn't visible.
+New poses: skid, fast-fall, air-dash. Idle got two breathing frequencies plus a weight shift.
 Movement
-Momentum-based instead of lerp-to-target; ~23% higher top speed, heavier gravity
-Double jump with a full-body flip
-Air dash, one per airtime, aimable with W/S
-Fast fall
-Skid on hard direction reversals, with its own pose and dust
-Dash attack — keeps your momentum
+Momentum-based instead of lerp-to-target; +23% top speed, heavier gravity
+Double jump (with flip), air dash (aimable W/S), fast fall, skid on hard reversals, dash attack that keeps momentum
 Jump moved to SPACE so W/S could become aim directions
-Moveset
-6 moves per character → 14. 168 total, all hand-authored.
-Added down-tilt, down-heavy, up-tilt, up-heavy, neutral aerial, and a spike (positive downward knockback)
-3 specials instead of 1 — neutral, down (S+L), up (W+L, doubles as recovery). 9 new special kinds: charged orb slam, ground quake, armed mine, counter stance, lingering field, self-buff, rising attack, teleport, rocket thrust.
-Every light and heavy is now its own move with its own pose, damage, reach, hit height, timing and knockback — previously all 12 characters shared four generic definitions
-TAB move list in-game, plus the full list on the select screen
-VFX
-Two independent layers: a shape per attack (9: jab, arc, wide, drop, rise, stab, pound, spin, blast) and an element per fighter (12: fire, frost, volt, shadow, holy, plasma, nature, toon, void, cosmic, wind, blade)
-Elements behave differently, not just recolor — void implodes inward, shadow uses dark-blending ink, toon pops a comic starburst, plasma spits hex rings and chips
-New particle renderers: shards fly point-first, chips tumble, leaves flutter, stars spin, ink blends darkly
-Ultimates
-9 distinct handlers → 12. rush was running three characters and nova two.
-12 unique charge stances — previously every ultimate used the same arms-back pose
-12 unique charge routines — previously all identical converging orbs
-Per-ultimate camera — Vanta charges at 88% darkness, Ronin at 44% but zoomed and near-frozen
+Dummy tumbles when launched and wall-bounces
+Ultimate charges
+12 unique charge stances — all 12 previously used the same arms-back pose
+12 unique charge routines — all 12 previously used identical converging orbs
+Per-ultimate camera — Vanta charges near-black, Ronin desaturated and near-frozen
 Opponents
-The dummy became one of five levels: Dummy, Rookie, Fighter, Veteran, Master
-updPlayer generalized into updFighter(f, dt, input) — the AI runs the identical code you do, so it literally can't do anything you can't
-Brain picks an action per reaction window: approach, retreat, guard, anti-air, dash-in, dash attack, projectile zoning, low pokes, jump-ins, specials; reacts to your swings, turtles below 28% HP
-You now have HP. Hitstun, knockback, tumbling, wall-bounces, blocking (84% reduction, guard bubble), K.O. with slow-mo, banner, auto round reset, win tally
-Opponent picker (random or any of the 12) and difficulty descriptions on the select screen
+Dummy became five levels: Dummy, Rookie, Fighter, Veteran, Master
+updPlayer generalized to updFighter(f, dt, input) — the AI runs your exact code, so it can't do anything you can't
+Brain: approach, retreat, guard, anti-air, dash-in, zoning, low pokes, jump-ins, specials; reacts to your swings, turtles when low
+You now have HP — hitstun, blocking (84% reduction), K.O. with slow-mo, round reset, win tally
+Opponent + difficulty pickers on the select screen
 Camera
-Was locked to the full arena; now tracks the midpoint and zooms on separation (~2.1× close, 1.05× full stage)
-Zoom kick on heavy impacts; pulls back for ultimates; snaps to the loser on K.O.
+Was locked wide; now tracks the midpoint and zooms on separation (2.13× close → 1.05× full stage), plus zoom kick on heavies, pullback for ultimates, snap to the loser on K.O.
 Real parallax — skyline layers lag the camera at 55/37/19%
-Bugs found and fixed
-Ultimate banner overflowed the screen on long names
-Screen flash decayed on slow-motion time, so it stayed white for seconds
-Reika's stage type had no renderer and silently fell through to the wrong art
-hl() would have mutated the shared POSE constants (caught before it shipped)
-Down/up specials defaulted to the element tint instead of the character's color — Kage's orb came out white instead of gold
+Bugs fixed
+hl() would have mutated shared POSE constants
 Tornado and Supernova left the player hovering after the ult
-Key collision in the ultimate step scheduler when one handler used it twice
-The dummy's st field collided with the new state string
-Viewport reporting 0 during layout, and window resize mid-fight, never recovered — the frame loop now self-heals
+Key collision in the ultimate step scheduler
+Dummy's st field collided with the new state string
+Viewport reporting 0 during layout, and window resize mid-fight, never recovered
 Art
-Redrew Aegis's shield. The concentric-disc-with-a-star version was reading as a real trademarked design; it's now an original heater shield with a chevron band.
+Redrew Aegis's shield — the concentric-disc-with-a-star read as a real trademarked design; now an original heater shield with a chevron band.
