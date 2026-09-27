@@ -2912,6 +2912,9 @@ function drawFighter(f,t){
   if(f.buffT>0){X.save();X.globalCompositeOperation='lighter';
     X.globalAlpha=.3+Math.sin(t*9)*.12;X.drawImage(glowSprite(C.c3),-60,-130,120,140);X.restore();
     if(Math.random()<.3)bolt(f.x+rnd(30,-30),f.y-rnd(130,40),f.x+rnd(40,-40),f.y-rnd(100,10),C.c3,.4);}
+  // rim light: the stage's key colour peeking out along the back edge of the silhouette
+  if(!f.flashT){X.save();X.translate(-2.6,-1.6);X.globalCompositeOperation='lighter';X.globalAlpha=.55;
+    RL=1;try{withTint(mixC(ST.fog,'#ffffff',.25),1,()=>drawBody(X,C,f.pose||stanceOf(f),PS,t,bodyOpts(f,{nosim:1})));}finally{RL=0;}X.restore();}
   const draw=()=>drawBody(X,C,f.pose||stanceOf(f),PS,t,bodyOpts(f));
   if(f.flashT>0)withTint(f.flashC,.8,draw);else draw();
   X.restore();
