@@ -484,13 +484,9 @@ function drawHeadgear(c,r){
   if(ch.hair==='twintails'){for(const x of[-.72,-.22])fp(c,cc=>{cc.arc(x*r,(x<-.5?-.55:-.85)*r,.26*r,0,TAU);});}
   if(ch.hair==='bald'){}
   if(ch.hair==='gojo'){const sw=(RS.opt.sway||0)*.14;
-    if(!RS.opt.unveil)fp(c,cc=>{  // pushed straight up by the blindfold: a crown of white spikes
+    fp(c,cc=>{  // a crown of white spikes, blindfold or not
       const s=[[.95,-.1],[1.08,-.74],[.74,-.6],[.92,-1.42],[.47,-.98],[.58,-1.96],[.14,-1.12],[.06,-2.24],[-.25,-1.2],[-.44,-2.06],[-.62,-1.06],[-.98,-1.72],[-1.0,-.84],[-1.4,-1.12],[-1.12,-.42],[-1.2,-.06]];
-      s.forEach((p,i)=>{const k=Math.max(0,-p[1]-.6)/1.6,x=(p[0]-sw*k*2)*r,y=p[1]*r;i?cc.lineTo(x,y):cc.moveTo(x,y);});cc.closePath();});
-    else fp(c,cc=>{                  // blindfold off: the hair falls into a soft fringe
-      const s=[[-1.05,.6],[-1.3,.15],[-1.12,.02],[-1.42,-.45],[-1.1,-.55],[-1.28,-1.02],[-.8,-1.08],[-.72,-1.5],[-.3,-1.22],[.05,-1.55],[.3,-1.18],[.72,-1.3],[.8,-.9],[1.2,-.62],[1.02,-.38],
-        [1.24,-.08],[1.0,-.12],[1.08,.3],[.86,.02],[.8,.36],[.62,.02],[.42,.1],[.2,-.02],[-.25,.08],[-.62,.38]];
-      s.forEach((p,i)=>{const k=Math.max(0,-p[1]-.5)/1.2,x=(p[0]-sw*k)*r,y=p[1]*r;i?cc.lineTo(x,y):cc.moveTo(x,y);});cc.closePath();});}
+      s.forEach((p,i)=>{const k=Math.max(0,-p[1]-.6)/1.6,x=(p[0]-sw*k*2)*r,y=p[1]*r;i?cc.lineTo(x,y):cc.moveTo(x,y);});cc.closePath();});}
   if(ch.blindfold&&!RS.opt.unveil)fp(c,cc=>{cc.rect(-1.08*r,-.16*r,2.22*r,.44*r);});
   if(ch.hat){                                   // witch hat: wide brim, tall crooked cone
     fp(c,cc=>{cc.ellipse(.05*r,-.62*r,1.9*r,.34*r,-.12,0,TAU);});
@@ -3209,13 +3205,9 @@ function figFront(c,g,ch,o){
   if(ch.hat){c.beginPath();c.ellipse(0,-hr*.72,hr*2.4,hr*.36,0,0,TAU);c.fill();const sw=Math.sin(t*1.3)*.1;
     c.beginPath();c.moveTo(-hr*.95,-hr*.8);c.quadraticCurveTo(-hr*.6,-hr*2.4,hr*(.2+sw),-hr*3.1);c.quadraticCurveTo(hr*(.9+sw*2),-hr*3.4,hr*(1.7+sw*3),-hr*3.0);c.quadraticCurveTo(hr*.5,-hr*2.4,hr*.95,-hr*.8);c.fill();}
   if(ch.hood){c.beginPath();c.moveTo(-hr*1.4,hr*1.35);c.quadraticCurveTo(-hr*1.6,-hr*.85,0,-hr*1.85);c.quadraticCurveTo(hr*1.6,-hr*.85,hr*1.4,hr*1.35);c.closePath();c.fill();}
-  if(ch.hair==='gojo'){
-    if(bf>=.5){c.beginPath();const n=14;for(let i=0;i<=n;i++){const u=i/n,a=-PI+.3+u*(PI-.6),rr=i%2?1.02:(1.5+.75*Math.sin(u*PI))*(1+.04*Math.sin(t*2+i));
+  if(ch.hair==='gojo'){  // a crown of white spikes, blindfold or not
+    c.beginPath();const n=14;for(let i=0;i<=n;i++){const u=i/n,a=-PI+.3+u*(PI-.6),rr=i%2?1.02:(1.5+.75*Math.sin(u*PI))*(1+.04*Math.sin(t*2+i));
         const x=Math.cos(a)*rr*hr,y=Math.sin(a)*rr*hr-hr*.18;i?c.lineTo(x,y):c.moveTo(x,y);}c.lineTo(hr*.92,-hr*.05);c.lineTo(-hr*.92,-hr*.05);c.closePath();c.fill();}
-    else{c.beginPath();const s=[[-.88,.62],[-1.12,.2],[-1.02,.1],[-1.3,-.26],[-1.07,-.36],[-1.36,-.8],[-.98,-.86],[-1.06,-1.3],[-.62,-1.12],[-.46,-1.56],[-.12,-1.2],[.18,-1.62],[.38,-1.18],[.84,-1.46],[.84,-1.0],[1.3,-.96],[1.04,-.56],[1.38,-.3],[1.05,.04],[1.16,.24],[.9,.6],
-        [.84,.25],[.74,-.12],[.62,.02],[.48,-.22],[.32,-.04],[.18,-.24],[.03,.3],[-.14,-.22],[-.3,-.05],[-.46,-.22],[-.64,.04],[-.74,-.1],[-.84,.26]];
-      if(back)s.splice(21,s.length-21,[.9,.95],[0,1.05],[-.9,.95]);
-      s.forEach((p,i)=>{const w=i<21&&(i%2===0)?Math.sin(t*2.2+i)*.035:0,x=(p[0]+w)*hr,y=(p[1]+w*.5)*hr;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fill();}}
   if(ch.blindfold&&bf>0){const by=hr*.08+(1-bf)*hr*1.35;c.fillRect(-hr*1.02,by-hr*.21,hr*2.04,hr*.42);
     if(!back)G2(q=>{q.globalAlpha=bf*(.45+hot*.35);q.drawImage(glowSprite(col),-hr*1.1,by-hr*.5,hr*2.2,hr);q.globalAlpha=bf*.9;q.fillStyle=mixC(col,'#ffffff',.45);q.fillRect(-hr*.9,by+hr*.17,hr*1.8,hr*.05);q.globalAlpha=1;});}
   if(ch.helm){ // a rounded war helm with cheek guards, horns sweeping out and up
@@ -3635,11 +3627,6 @@ function topC(X,G,P,x,z,kind,s,fx,fz){topFig(X,P,x,z,kind,s,fx,fz);G.save();G.gl
 function cutActors(){G.save();worldXf(G);G.globalCompositeOperation='destination-out';
   for(const f of cineActors())if(f.alpha>0){G.save();G.translate(f.x,f.y+f.ry);G.scale(f.face,1);drawBody(G,f.ch,f.pose,1,gameT,{lite:1,nosim:1,cloth:f.cloth,inkCol:'#000',unveil:f.unveil});G.restore();}
   G.restore();}
-/* a box with a colour per face {f:front/back, l:left, r:right, t:top} */
-function pboxC(c,P,x0,x1,y0,y1,z0,z1,cl){
-  const v=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]].map(p=>P(p[0],p[1],p[2]));if(v.some(q=>!q))return;
-  for(const f of[[0,1,2,3,'f'],[5,4,7,6,'f'],[4,0,3,7,'l'],[1,5,6,2,'r'],[4,5,1,0,'t'],[3,2,6,7,'f']]){const a=v[f[0]],b=v[f[1]],d=v[f[2]];if((b[0]-a[0])*(d[1]-a[1])-(b[1]-a[1])*(d[0]-a[0])>=0)continue;
-    const p=new Path2D();for(let j=0;j<4;j++)j?p.lineTo(v[f[j]][0],v[f[j]][1]):p.moveTo(v[f[j]][0],v[f[j]][1]);p.closePath();c.fillStyle=cl[f[4]];c.fill(p);if(PCUT)cutOut(k=>{k.fillStyle='#000';k.fill(p);});}}
 
 /* =======================================================================
    GOJO — limited-time guest (Satoru Gojo, from Jujutsu Kaisen), drawn as
@@ -3775,38 +3762,53 @@ function infinity(g,a,pt,proj){
   a.st='frozen';a.t=0;a.stun=.7;a.frozen=1;a.vx=0;a.vy=0;a.mv=null;a.hot=0;hitstop=Math.max(hitstop,.1);
   g.face=a.x>g.x?1:-1;doMove(g,'CT');
 }
-/* an orb of cursed energy: -1 pulls in (dark heart, spiral arms), 1 pushes out (white heart, rings), 0 both */
-function orbFX(c,g,x,y,r,col,t,dir){if(r<=.5)return;
-  g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.85;g.drawImage(glowSprite(col),x-r*4,y-r*4,r*8,r*8);g.globalAlpha=1;g.drawImage(glowSprite(col,1),x-r*1.3,y-r*1.3,r*2.6,r*2.6);
-  g.strokeStyle=mixC(col,'#ffffff',.5);g.lineWidth=Math.max(1.2,r*.07);
-  if(dir<=0)for(let i=0;i<4;i++){const a0=t*(dir<0?9:6)+i*PI/2;g.beginPath();for(let j=0;j<=14;j++){const u=j/14,rr=r*(3.2-u*2.5),a=a0+u*2.6;const px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr*.8;j?g.lineTo(px,py):g.moveTo(px,py);}g.globalAlpha=.55;g.stroke();}
-  if(dir>=0)for(let i=0;i<3;i++){const q=((t*3.2+i/3)%1);g.globalAlpha=(1-q)*.7;g.lineWidth=Math.max(1,r*.1*(1-q));g.beginPath();g.arc(x,y,r*(1+q*2.6),0,TAU);g.stroke();}
-  g.globalAlpha=1;if(dir>0||dir===0){g.fillStyle='#fff6fb';g.beginPath();g.arc(x,y,r*.38,0,TAU);g.fill();}g.restore();
-  if(dir<0){g.save();g.globalCompositeOperation='destination-out';g.beginPath();g.arc(x,y,r*.42,0,TAU);g.fill();g.restore();c.save();c.fillStyle='#010207';c.beginPath();c.arc(x,y,r*.42,0,TAU);c.fill();c.restore();}}
 
 /* ---------------- hands for the close-ups ---------------- */
-/* fingers along local -y: 'two' index and middle together, 'cross' index over middle */
-function signHand(c,x,y,s,ang,style,col){c.save();c.translate(x,y);c.rotate(ang||0);c.scale(s,s);c.fillStyle=col||INK;c.strokeStyle=col||INK;c.lineCap='round';c.lineJoin='round';
-  c.beginPath();c.moveTo(-11,18);c.lineTo(-14,170);c.lineTo(14,170);c.lineTo(11,18);c.fill();
-  c.beginPath();c.moveTo(-16,24);c.quadraticCurveTo(-19,-2,-15,-22);c.lineTo(15,-24);c.quadraticCurveTo(19,-2,15,24);c.closePath();c.fill();
-  const fing=(fx,L,w,a)=>{c.lineWidth=w*2;c.beginPath();c.moveTo(fx,-20);c.lineTo(fx+Math.sin(a)*L,-20-Math.cos(a)*L);c.stroke();};
-  if(style==='cross'){fing(-4,33,3.9,.2);fing(4.2,31,3.7,-.26);}else{fing(-3.6,32,3.9,-.03);fing(3.8,31,3.7,.03);}
-  c.lineWidth=7.5;c.beginPath();c.moveTo(-11.5,-20);c.lineTo(-12.5,-29);c.moveTo(11,-20);c.lineTo(11.5,-27);c.stroke();
-  c.lineWidth=8.5;c.beginPath();c.moveTo(-14,8);c.quadraticCurveTo(-25,-4,-9,-13);c.stroke();c.restore();}
-function signCut(c,g,x,y,s,ang,style){signHand(c,x,y,s,ang,style);g.save();g.globalCompositeOperation='destination-out';signHand(g,x,y,s,ang,style,'#000');g.restore();}
+/* the seal for the domain: index straight up, middle crossed over it, the other two folded under the thumb.
+   Palm toward us, fingers along local -y, sleeve along +y. */
+function signHand(c,x,y,s,ang,col){c.save();c.translate(x,y);c.rotate(ang||0);c.scale(s,s);c.fillStyle=col||INK;c.strokeStyle=col||INK;c.lineCap='round';c.lineJoin='round';
+  c.beginPath();c.moveTo(-13,26);c.quadraticCurveTo(-15,70,-24,120);c.lineTo(-30,230);c.lineTo(34,230);c.lineTo(26,118);c.quadraticCurveTo(16,70,13,26);c.closePath();c.fill();
+  c.beginPath();c.moveTo(-13,28);c.quadraticCurveTo(-21,10,-18,-10);c.quadraticCurveTo(-17,-24,-11,-27);c.lineTo(18,-24);c.quadraticCurveTo(21,-6,17,12);c.quadraticCurveTo(15,24,13,28);c.closePath();c.fill();
+  for(const[fx,fy,r]of[[10,-26,6],[17,-21,5.2]]){c.beginPath();c.arc(fx,fy,r,0,TAU);c.fill();}
+  c.lineWidth=11;c.beginPath();c.moveTo(-15,10);c.quadraticCurveTo(-25,-2,-12,-13);c.lineTo(5,-18);c.stroke();
+  const fing=(x0,y0,x1,y1,w0,w1)=>{c.beginPath();tubePath(c,[[x0,y0],[lerp(x0,x1,.5),lerp(y0,y1,.5)],[x1,y1]],[w0,(w0+w1)/2,w1],true);c.fill();};
+  fing(-10,-22,-2,-70,4.6,3.5);fing(4,-22,-13,-72,4.7,3.6);
+  c.restore();}
+function signCut(c,g,x,y,s,ang,rim){if(rim){c.save();c.translate(-2.2*s,0);signHand(c,x,y,s,ang,rim);c.restore();}signHand(c,x,y,s,ang);g.save();g.globalCompositeOperation='destination-out';signHand(g,x,y,s,ang,'#000');g.restore();}
 
-/* ---------------- the Infinite Void ---------------- */
-function voidBg(X,G,t,o){o=o||{};const W=V.W,H=V.H,cx=W*(o.cx||.5),cy=H*(o.cy||.38),R=H*(o.R||.42);
-  const g=X.createRadialGradient(cx,cy,0,cx,cy,H*1.3);g.addColorStop(0,'#0c1a48');g.addColorStop(.45,'#050b26');g.addColorStop(1,'#010208');X.fillStyle=g;X.fillRect(0,0,W,H);
-  X.fillStyle='#000003';X.beginPath();X.ellipse(cx,cy,R*.64,R*.64*.3,-.08,0,TAU);X.fill();
+/* ---------------- the Infinite Void ----------------
+   a starfield with no end, a ring of light as big as the sky with nothing at its centre,
+   and a floor like black glass that reflects all of it. Screen space. */
+function voidPaint(X,G,t,o){o=o||{};const W=V.W,H=V.H,cx=W*(o.cx===undefined?.5:o.cx),cy=H*(o.cy===undefined?.34:o.cy),R=H*(o.R||.3),fl=o.floor,a=o.a===undefined?1:o.a;
+  const bg=X.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#010209');bg.addColorStop(.5,'#040b26');bg.addColorStop(1,'#010208');X.fillStyle=bg;X.fillRect(0,0,W,H);
   G.save();G.globalCompositeOperation='lighter';
-  for(let i=0;i<240;i++){const x=hash(i*1.3)*W,y=hash(i*2.7)*H,s=.6+hash(i*3.9)*1.8;G.globalAlpha=.3+.35*Math.sin(t*2+i);G.fillStyle=i%7?'#dfe9ff':'#9fd8ff';G.fillRect(x,y,s,s);}
-  G.globalAlpha=.5;G.drawImage(glowSprite('#6fa8ff'),cx-R*1.7,cy-R*1.1,R*3.4,R*2.2);
-  for(const[rr,w,cc,a]of[[1,16,'#9fd0ff',.45],[1,4,'#ffffff',.95],[.84,5,'#6fa8ff',.5],[1.2,2.5,'#bfe4ff',.35],[1.45,1.5,'#9fd0ff',.25]]){G.globalAlpha=a;G.strokeStyle=cc;G.lineWidth=w;G.beginPath();G.ellipse(cx,cy,R*rr,R*rr*.3,-.08,0,TAU);G.stroke();}
-  G.globalAlpha=.25;G.strokeStyle='#cfe8ff';G.lineWidth=1;
-  for(let i=0;i<46;i++){const a=hash(i*5.1)*TAU,r0=R*(1.4+hash(i)*1.4),sp=((t*.5+hash(i*2))%1),k0=1-sp*.55,k1=k0-.1;G.beginPath();G.moveTo(cx+Math.cos(a)*r0*k0,cy+Math.sin(a)*r0*.42*k0);G.lineTo(cx+Math.cos(a)*r0*k1,cy+Math.sin(a)*r0*.42*k1);G.stroke();}
-  G.restore();}
-function voidWorld(o){return X=>{X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);voidBg(X,G,gameT,o);G.restore();X.restore();};}
+  for(const[dx,dy,r,c,al]of[[0,0,1.2,'#2a4cff',.28],[-.32,.16,.8,'#7a3cff',.14],[.36,-.1,.75,'#3ad8ff',.11],[.1,.3,.6,'#5a2cff',.1]]){G.globalAlpha=al*a;G.drawImage(glowSprite(c),cx+dx*W-H*r,cy+dy*H-H*r,H*r*2,H*r*2);}
+  // stars, a few of them with glints
+  for(let i=0;i<280;i++){const x=hash(i*1.31)*W,y=hash(i*2.71)*(fl||H),s=.6+hash(i*3.9)*1.7;G.globalAlpha=a*(.35+.35*Math.sin(t*1.7+i));G.fillStyle=i%6?'#dfe9ff':'#9fd8ff';G.fillRect(x,y,s,s);
+    if(i%23===0){const L=4+s*3;G.globalAlpha*=.8;G.fillRect(x-L,y+s/2-.4,L*2+s,.8);G.fillRect(x+s/2-.4,y-L,.8,L*2+s);}}
+  // information: light pouring out of the centre past us, faster the closer it gets
+  const warp=o.warp===undefined?.35:o.warp;if(warp>0){G.lineCap='round';const D=Math.hypot(W,H);
+    for(let i=0;i<110;i++){const an=hash(i*4.7)*TAU,q=(t*(.35+hash(i*1.3)*.5)+hash(i*9.1))%1,d0=R*1.08+Math.pow(q,2.2)*D,len=6+Math.pow(q,2)*D*.12,x=cx+Math.cos(an)*d0,y=cy+Math.sin(an)*d0;if(fl&&y>fl)continue;
+      G.globalAlpha=a*warp*Math.min(1,q*1.8)*.8;G.strokeStyle=i%4===0?'#b89cff':i%3?'#dff0ff':'#7fd8ff';G.lineWidth=.6+q*1.8;G.beginPath();G.moveTo(x,y);G.lineTo(x+Math.cos(an)*len,y+Math.sin(an)*len);G.stroke();}}
+  // the ring: rays, a halo, a hard bright band, and arcs racing round it
+  G.save();G.translate(cx,cy);G.rotate(t*.04);for(let i=0;i<64;i++){const an=i/64*TAU+hash(i)*.08,L=R*(.35+hash(i*2.3)*1.7),w=.012+hash(i*5.1)*.02;G.globalAlpha=a*(.07+hash(i*7.7)*.2);G.fillStyle=i%5?'#cfe6ff':'#8fb4ff';
+    G.beginPath();G.moveTo(Math.cos(an-w)*R*1.02,Math.sin(an-w)*R*1.02);G.lineTo(Math.cos(an)*(R*1.02+L),Math.sin(an)*(R*1.02+L));G.lineTo(Math.cos(an+w)*R*1.02,Math.sin(an+w)*R*1.02);G.fill();}G.restore();
+  G.globalAlpha=.7*a;G.drawImage(glowSprite('#7fb4ff'),cx-R*2.3,cy-R*2.3,R*4.6,R*4.6);
+  for(const[w,c,al]of[[.11,'#4f8cff',.55],[.05,'#bfe0ff',.9],[.016,'#ffffff',1]]){G.globalAlpha=al*a;G.strokeStyle=c;G.lineWidth=R*w;G.beginPath();G.arc(cx,cy,R,0,TAU);G.stroke();}
+  for(let i=0;i<12;i++){const r=R*(1.04+hash(i*3.3)*.12),a0=hash(i)*TAU+t*(.6+hash(i*2)*1.4)*(i%2?1:-1);G.globalAlpha=a*.55;G.strokeStyle=i%3?'#dff0ff':'#8fd0ff';G.lineWidth=1+hash(i*8)*2;G.beginPath();G.arc(cx,cy,r,a0,a0+.3+hash(i*6)*.9);G.stroke();}
+  G.restore();
+  // nothing at the centre
+  G.save();G.globalCompositeOperation='destination-out';G.beginPath();G.arc(cx,cy,R*.955,0,TAU);G.fill();G.restore();
+  X.fillStyle='#000003';X.beginPath();X.arc(cx,cy,R*.955,0,TAU);X.fill();
+  G.save();G.globalCompositeOperation='lighter';const ig=G.createRadialGradient(cx,cy,R*.7,cx,cy,R*.955);ig.addColorStop(0,'rgba(80,140,255,0)');ig.addColorStop(1,rgba('#6fa8ff',.35*a));G.fillStyle=ig;G.beginPath();G.arc(cx,cy,R*.955,0,TAU);G.fill();G.restore();
+  // the floor: black glass, the ring mirrored in it
+  if(fl!==undefined&&fl<H){const fg=X.createLinearGradient(0,fl,0,H);fg.addColorStop(0,'#030818');fg.addColorStop(1,'#010206');X.fillStyle=fg;X.fillRect(0,fl,W,H-fl);
+    const my=fl+(fl-cy)*.9;G.save();G.globalCompositeOperation='lighter';G.beginPath();G.rect(0,fl,W,H-fl);G.clip();G.globalAlpha=.3*a;G.drawImage(glowSprite('#7fb4ff'),cx-R*2,my-R*.9,R*4,R*1.8);
+      G.globalAlpha=.4*a;G.strokeStyle='#bfe0ff';G.lineWidth=R*.03;G.beginPath();G.ellipse(cx,my,R,R*.42,0,0,TAU);G.stroke();
+      const hg=G.createLinearGradient(0,0,W,0);hg.addColorStop(0,'rgba(120,180,255,0)');hg.addColorStop(.5,rgba('#cfe8ff',.7*a));hg.addColorStop(1,'rgba(120,180,255,0)');G.globalAlpha=1;G.fillStyle=hg;G.fillRect(0,fl,W,1.5);G.restore();}}
+function voidWorld(o){return X=>{X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);voidPaint(X,G,gameT,Object.assign({floor:GSY()},o));G.restore();X.restore();};}
+/* a figure standing on the glass, and its reflection under it */
+function silMirror(X,G,ch,x,y,sc,o){X.save();X.translate(x,y);X.scale(1,-1);X.translate(-x,-y);X.globalAlpha=.35;sil(X,G,ch,x,y,sc,Object.assign({},o,{ink:'#01030a',noGlow:1,noCut:1}));X.restore();return sil(X,G,ch,x,y,sc,o);}
 
 /* ---------------- ultimates ---------------- */
 CUTS.gojo=(A,D)=>A.hp<=A.hpMax*.35?domainCut(A,D):purpleCut(A,D);
@@ -3864,14 +3866,16 @@ function purpleCut(A,D){const PY=-100,PR=115,col=A.ch.col,B=GOJO_BLUE,R=GOJO_RED
      if(rnd()<.7){const x=rnd(W);pt({x,y:H*1.02,vx:(W*.5-x)*.4,vy:-rnd(700,300),l:rnd(1,.5),s:rnd(6,2),c:INK,t:'rock',g:-200,dr:.9});}},
    ev:[[.05,()=>SFX.charge(1.1)]]},
   // 6 — side on: he lets it go, and it gouges the world open
-  {d:2.1,speed:[[0,1],[.32,1],[.44,.3,'o'],[.64,.3],[.76,1,'i'],[2.1,1]],bg:bgStageTint('#0a0014',.55),noFront:1,impCol:PU,
+  {d:2.7,fout:.3,speed:[[0,1],[.32,1],[.44,.3,'o'],[.64,.3],[.76,1,'i'],[2.7,1]],bg:bgStageTint('#0a0014',.55),noFront:1,impCol:PU,
    enter(S){A.unveil=1;CU.at(A,-420,0,1);CU.at(D,150,0,-1);A.pose=flick;D.pose=copyPose(D.P.stance);S.x0=A.x+120;S.sx=S.x0;S.go=0;S.imp=-9;S.R=40;POST.letter=1;},
    upd(u,t,S,dt){S.R=lerp(46,PR,E.o(seg01(t,0,.32)));const tt=Math.max(0,t-.32);S.sx=S.x0+tt*tt*1100+tt*520;
      if(!S.go&&S.sx+S.R*.5>D.x){S.go=1;S.imp=t;D.vx=1500;D.vy=-820;D.y=-1;SFX.impact();shake(26);}
      if(S.go){D.vx*=Math.pow(.55,dt);fly(D,dt,1500,0);D.pose=D.P.tumble;}
      if(tt>0&&rnd()<.9){pt({x:S.sx-rnd(40),y:-4,vx:-rnd(500,100),vy:-rnd(900,300),l:rnd(1.2,.6),s:rnd(9,3),c:INK,t:'rock',g:1800,dr:.8});
        pt({x:S.sx-S.R*rnd(1,.4),y:PY+rnd(S.R,-S.R),vx:-rnd(700,200),vy:rnd(80,-80),l:rnd(.5,.2),s:rnd(3,1.2),c:rnd()<.5?PU:'#f0d0ff',t:'spark',g:0});}
-     const k=E.io(seg01(u,.14,.5)),f2=E.io(seg01(u,.5,1));CU.cam(lerp(lerp(A.x+280,A.x+760,k),S.sx-260,f2*.8),lerp(-120,-190,k),lerp(1.0,.56,k),0);},
+     const k=E.io(seg01(u,.1,.4)),f2=E.io(seg01(u,.4,.75));CU.cam(lerp(lerp(A.x+280,A.x+760,k),S.sx-260,f2*.6),lerp(-120,-190,k),lerp(1.0,.56,k),0);
+     // far off to the right, out of sight, it goes off
+     if(!S.bm&&tt>0&&S.sx-S.R>cam.x+V.W/2/camK()+300){S.bm=t;SFX.impact();SFX.boom(1.4);shake(16);}},
    impDyn(S,t){return t-S.imp<.035?'a':t-S.imp<.07?'b':null;},
    under(X){const S=CINE.S,x0=S.x0,x1=S.sx;if(x1<=x0+4)return;X.fillStyle='#040108';X.beginPath();X.moveTo(x0,-1);X.lineTo(x1,-1);X.quadraticCurveTo(x1+12,26,x1-36,42);X.lineTo(x0+30,42);X.quadraticCurveTo(x0,32,x0,-1);X.fill();},
    glow(g){const S=CINE.S,x0=S.x0,x1=S.sx,R=S.R,L=x1-x0;g.save();g.globalCompositeOperation='lighter';
@@ -3884,78 +3888,83 @@ function purpleCut(A,D){const PY=-100,PR=115,col=A.ch.col,B=GOJO_BLUE,R=GOJO_RED
          g.globalAlpha=(1-q)*.65;g.lineWidth=1.5+hash(i*7)*2.5;g.beginPath();g.moveTo(xa,y);g.lineTo(xa-len,y);g.stroke();}
        const lg=g.createLinearGradient(x1,0,x0,0);lg.addColorStop(0,'rgba(255,225,255,1)');lg.addColorStop(.12,rgba(PU,.95));lg.addColorStop(.55,'rgba(170,40,110,.55)');lg.addColorStop(1,'rgba(120,20,40,.15)');
        g.globalAlpha=1;g.fillStyle=lg;g.fillRect(x0,-4,L,6);g.globalAlpha=.6;g.fillRect(x0+26,39,Math.max(0,L-60),3);}
+     if(S.bm){const k=CINE.t-S.bm,a=Math.max(0,1-k/1.3),re=cam.x+V.W/2/camK(),r=1000*(.35+Math.min(1,k*1.6));
+       g.globalAlpha=a*.95;g.drawImage(glowSprite(PU),re-r*.55,PY-r*1.1,r*1.5,r*2);g.globalAlpha=a*.7;g.drawImage(glowSprite('#ffe8ff',1),re-r*.2,PY-r*.5,r*.5,r);}
      g.restore();purpleFX(g,x1,PY,R,gameT,1);}},
-  // 7 — behind him: a straight channel carved to the horizon, and at the end of it, the purple goes off
-  {d:2.4,fout:.35,draw(X,G,u,t){const W=V.W,H=V.H,P=pcam({x:-170,y:-300-u*50,z:-430-u*70,pitch:.2,f:H*1.05}),hz=P.horizon,far=9000;
-     const run=seg01(u,0,.46),zs=lerp(160,far,E.i2(run)),det=seg01(u,.46,1),lit=det>0?Math.max(0,1-det*1.3):0;
-     psky(X,P,[[0,'#04030a'],[.7,'#120b22'],[1,mixC('#2e1c46','#8a50c8',lit*.8)]],'#16111f');
-     const gr=X.createLinearGradient(0,hz,0,H);gr.addColorStop(0,mixC('#33264a','#9a6ad0',lit*.6));gr.addColorStop(.3,'#1a1526');gr.addColorStop(1,'#0c0a12');X.fillStyle=gr;X.fillRect(0,hz,W,H-hz);
-     const zt=det>0?far:zs;pfill(X,P,[[-150,0,40],[150,0,40],[150,0,zt],[-150,0,zt]],'#06030a');
-     G.save();G.globalCompositeOperation='lighter';
-     // the molten edges of the channel: white where it is still cutting, cooling to red behind it
-     for(let i=0;i<24;i++){const z0=40+(zt-40)*i/24,z1=40+(zt-40)*(i+1)/24,h=(i+1)/24,cool=det>0?.35*(1-det*.6):1;G.globalAlpha=(.2+.8*Math.pow(h,1.5))*cool;G.strokeStyle=mixC('#8a1c40',h>.85&&!det?'#ffe0ff':PU,h);G.lineWidth=1.5+h*2;
-       for(const x of[-150,150]){const p=P(x,0,z0),q=P(x,0,z1);if(!p||!q)continue;G.beginPath();G.moveTo(p[0],p[1]);G.lineTo(q[0],q[1]);G.stroke();}}
-     if(!det){const q=P(0,-100,zs);if(q)purpleFX(G,q[0],q[1],Math.max(2,q[2]*PR),t,1);}
-     else{const c0=P(0,-40,far);if(c0){const k=E.o(det),rw=W*(.04+.46*k),rh=H*(.03+.3*k);G.globalAlpha=1-det*.7;G.drawImage(glowSprite(PU),c0[0]-rw*1.6,c0[1]-rh*1.6,rw*3.2,rh*2);
-         G.globalAlpha=(1-det)*.95;G.drawImage(glowSprite('#ffe8ff',1),c0[0]-rw*.5,c0[1]-rh*.7,rw,rh*.9);G.strokeStyle='#f0d8ff';G.lineWidth=3*(1-det)+1;G.globalAlpha=(1-det)*.8;
-         G.beginPath();G.ellipse(c0[0],c0[1],rw*1.3,rh*.35,0,0,TAU);G.stroke();G.globalAlpha=Math.max(0,1-det*4)*.85;G.fillStyle='#ffffff';G.fillRect(0,0,W,H);}}
-     G.restore();
-     PCUT=G;try{const items=[],hz2='#2c2140';for(const sd of[-1,1])for(let zi=0;zi<24;zi++)for(let xi=0;xi<6;xi++){const q=sd*13+zi*7.3+xi*1.9;if(xi&&hash(q)<.2)continue;
-         const z=200+zi*380,dz=220+hash(q+1)*110,xin=175+xi*330+hash(q+2)*30,w=190+hash(q+3)*110,h=Math.min(40+hash(q+4)*hash(q+4)*520,120+z*.15),
-           xa=sd>0?xin:-xin-w,xb=sd>0?xin+w:-xin,fg=Math.min(.85,Math.pow(z/9000,.9)*.85),inner=xi===0&&z<zt?.9:.25,
-           cl={f:mixC('#0b0913',hz2,fg),t:mixC(mixC('#1d1530','#7a4aa8',lit*.7),hz2,fg),l:mixC(sd>0?mixC('#07060c','#3a1a5c',inner):'#07060c',hz2,fg),r:mixC(sd<0?mixC('#07060c','#3a1a5c',inner):'#07060c',hz2,fg)};
-         items.push({x:(xa+xb)/2,z:z+dz/2,d:()=>pboxC(X,P,xa,xb,-h,0,z,z+dz,cl)});}
-       sortDraw(P,items);pfig(X,G,P,A.ch,-40,-10,{back:1,pose:u<.5?'stand':'pockets',over:u<.5?joinO(1):null,unveil:1,rim:mixC(PU,'#ffffff',.25),rimDx:1.5,t});}finally{PCUT=null;}},
-   ev:[[.1,()=>SFX.wind(1.6)],[1.1,()=>{SFX.impact();SFX.boom(1.4);shake(16);}]]},
-  // 8 — the blindfold goes back up
+  // 7 — the blindfold goes back up
   {d:1.0,enter(){A.unveil=1;CU.at(A,-120,0,1);A.pose=A.P.win;D.alpha=0;POST.letter=1;},upd(u,t){if(t>.45&&A.unveil){A.unveil=0;SFX.ui();}CU.on(A,0,150,2.6,0);},exit(){A.unveil=0;D.alpha=1;}},
  ]};}
 /* DOMAIN EXPANSION: INFINITE VOID — the world replaced with everything at once */
-function domainCut(A,D){const col=A.ch.col,sign=Q('gojo',{fx:[14,-16],y:4,lean:-.05,aF:[1.9,2.3,0],gF:2}),flick=Q('gojo',{fx:[30,-20],y:10,lean:.15,aF:[2.0,.2,0],gF:2});
+function domainCut(A,D){const VR={cy:.15,R:.17,warp:.25},col=A.ch.col,sign=Q('gojo',{fx:[14,-16],y:4,lean:-.05,aF:[1.9,2.3,0],gF:2}),flick=Q('gojo',{fx:[30,-20],y:10,lean:.15,aF:[2.0,.2,0],gF:2});
  return{pre:'DOMAIN EXPANSION',title:'INFINITE VOID',dmg:360,hits:1,impCol:col,shots:[
-  // 1 — the sign
-  {d:1.4,draw(X,G,u,t){const W=V.W,H=V.H;X.fillStyle='#010207';X.fillRect(0,0,W,H);glowAt(G,W*.5,H*.42,H*.55,col,.3+u*.25);
-     signCut(X,G,W*.5,H*.8,H/165*(1+u*.05),0,'cross');},
-   ev:[[.05,()=>{SFX.bell();tn(1.4,{w:'sine',f0:55,f1:40,g:.3,wet:1});}]]},
-  // 2 — the world is replaced, from him outward
-  {d:1.3,noFront:1,noShadow:1,under:()=>cutActors(),
+  // 1 — the seal, in front of him
+  {d:1.6,draw(X,G,u,t){const W=V.W,H=V.H;X.fillStyle='#010207';X.fillRect(0,0,W,H);glowAt(G,W*.5,H*.45,H*.8,'#2a4cff',.15+u*.2);
+     for(let i=0;i<90;i++){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=seg01(u,.2,.9)*(.3+.3*Math.sin(t*2+i));G.fillStyle='#dfe9ff';G.fillRect(hash(i*1.3)*W,hash(i*2.9)*H,1.2,1.2);G.restore();}
+     drawBust(X,G,A.ch,W*.4,0,{zoom:1.22*(1+u*.05),hy:.33,fig:{blind:1},hot:.5,rim:'#9fd8ff',rimDx:-1.6});
+     const hx=W*.6,hy=H*(1.02-E.o(seg01(u,0,.35))*.2),s=H/250*(1+u*.04);glowAt(G,hx-H*.02,hy-H*.28,H*.28,'#8fd0ff',.35+.3*seg01(u,.55,.7));signCut(X,G,hx,hy,s,-.06,'#bfe6ff');
+     const p=seg01(u,.58,1);if(p>0&&p<1){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=(1-p)*.8;G.strokeStyle='#dff2ff';G.lineWidth=(1-p)*6+1;G.beginPath();G.arc(hx-H*.02,hy-H*.26,p*H*.9,0,TAU);G.stroke();G.restore();}},
+   ev:[[.05,()=>tn(1.6,{w:'sine',f0:55,f1:40,g:.3,wet:1})],[.95,()=>SFX.bell()]]},
+  // 2 — darkness spills out of him and swallows the stage; the void opens inside it
+  {d:1.6,noFront:1,noShadow:1,under:()=>cutActors(),
    enter(){A.unveil=1;CU.at(A,-150,0,1);CU.at(D,150,0,-1);A.pose=sign;D.pose=copyPose(D.P.stance);POST.letter=1;},
-   upd(){CU.cam(0,-140,1.15,0);},
-   bg:X=>{drawStageBack(X);const h=CU.head(A),s=w2s(h[0],h[1]),R=Math.max(1,Math.hypot(V.W,V.H)*E.i(seg01(CINE.t/1.3,.05,.95)));
-     X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);for(const c of[X,G]){c.beginPath();c.arc(s[0],s[1],R,0,TAU);c.clip();}voidBg(X,G,gameT);X.restore();G.restore();
-     G.save();G.setTransform(1,0,0,1,0,0);G.globalCompositeOperation='lighter';G.strokeStyle='#dff2ff';G.lineWidth=3;G.globalAlpha=.9;G.beginPath();G.arc(s[0],s[1],R,0,TAU);G.stroke();G.restore();},
-   ev:[[.1,()=>SFX.rise(1.2)]]},
-  // 3 — inside: everything, all at once
-  {d:1.5,draw(X,G,u,t){const W=V.W,H=V.H;voidBg(X,G,t,{cy:.36,R:.4});
-     sil(X,G,A.ch,W*.3,H*.92,H/620,{pose:'pockets',unveil:1,hot:1});
-     const d=sil(X,G,D.ch,W*.7+Math.sin(t*40)*1.5,H*.9,H/600,{pose:'loose',tilt:.06,hot:.2}),hx=d.head[0],hy=d.head[1];
-     G.save();G.globalCompositeOperation='lighter';G.lineWidth=1.2;for(let i=0;i<70;i++){const a=hash(i*3.1)*TAU,L=W*(.2+hash(i)*.6),q=((t*1.4+hash(i*7))%1),x0=hx+Math.cos(a)*L*(1-q),y0=hy+Math.sin(a)*L*(1-q)*.6;
-       G.globalAlpha=.5*(1-q);G.strokeStyle=i%3?'#cfe8ff':col;G.beginPath();G.moveTo(x0,y0);G.lineTo(x0+Math.cos(a)*L*.06,y0+Math.sin(a)*L*.04);G.stroke();}G.restore();},
-   ev:[[.1,()=>SFX.choir([110,164.8,220,277.2],4,.05)]]},
-  // 4 — their eyes: seeing everything, able to do nothing
-  {d:1.1,draw(X,G,u,t){drawEyesClose(X,G,D.ch,1,{zoom:1.05,dx:Math.sin(t*50)*.004,look:Math.sin(t*23)*.6,reflect:(g,x,y,r)=>{g.strokeStyle='#dff2ff';g.lineWidth=1;
-       for(let i=0;i<8;i++){const yy=y-r*.6+i*r*.16,o=((t*3+i*.3)%1);g.globalAlpha=.6;g.beginPath();g.moveTo(x-r*.7+o*r*.3,yy);g.lineTo(x+r*.6,yy);g.stroke();}}});},
-   ev:[[.1,()=>SFX.heart()],[.6,()=>SFX.heart()]]},
-  // 5 — he walks up. No hurry.
-  {d:1.3,noFront:1,noShadow:1,bg:voidWorld({cy:.3,R:.5}),under:()=>cutActors(),
+   upd(){CU.cam(0,-140,1.0,0);},
+   bg:X=>{drawStageBack(X);const u=CINE.t/1.6,h=CU.head(A),s=w2s(h[0],h[1]),R=Math.hypot(V.W,V.H)*1.05*E.i2(seg01(u,.04,.78)),tt=gameT;if(R<2)return;
+     const blob=c=>{c.beginPath();for(let i=0;i<=72;i++){const an=i/72*TAU,r=R*(1+.05*Math.sin(an*7+tt*3)+.03*Math.sin(an*13-tt*5));i?c.lineTo(s[0]+Math.cos(an)*r,s[1]+Math.sin(an)*r):c.moveTo(s[0]+Math.cos(an)*r,s[1]+Math.sin(an)*r);}c.closePath();};
+     X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);blob(X);X.clip();blob(G);G.clip();X.fillStyle='#000002';X.fillRect(0,0,V.W,V.H);G.clearRect(0,0,V.W,V.H);
+     const va=seg01(u,.45,.95);if(va>0)voidPaint(X,G,tt,Object.assign({},VR,{a:va,floor:GSY(),warp:.25*va}));X.restore();G.restore();
+     G.save();G.setTransform(1,0,0,1,0,0);G.globalCompositeOperation='lighter';blob(G);G.strokeStyle='#bfe6ff';G.lineWidth=2.5;G.globalAlpha=.9;G.stroke();G.lineWidth=12;G.globalAlpha=.2;G.stroke();G.restore();},
+   ev:[[.1,()=>SFX.rise(1.4)],[1.1,()=>SFX.choir([110,164.8,220,277.2],5,.05)]]},
+  // 3 — inside: an endless dark, a ring as big as the sky, the two of them on black glass
+  {d:2.2,draw(X,G,u,t){const W=V.W,H=V.H,z=1+u*.06,fl=H*.76;X.save();G.save();X.translate(W/2,H*.5);X.scale(z,z);X.translate(-W/2,-H*.5);G.setTransform(X.getTransform());
+     voidPaint(X,G,t,{floor:fl,cy:.33,R:.3,warp:.4});
+     silMirror(X,G,A.ch,W*.33,fl,H/540,{pose:'pockets',unveil:1,hot:.8,rim:'#bfe0ff',rimDx:1.2});
+     const d=silMirror(X,G,D.ch,W*.67+Math.sin(t*38)*1.2,fl,H/520,{pose:'loose',tilt:.04,hot:.2,rim:'#bfe0ff',rimDx:-1.2}),hx=d.head[0],hy=d.head[1];
+     G.save();G.globalCompositeOperation='lighter';G.lineWidth=1.1;for(let i=0;i<60;i++){const an=hash(i*3.1)*TAU,L=W*(.15+hash(i)*.5),q=(t*1.3+hash(i*7))%1,x0=hx+Math.cos(an)*L*(1-q),y0=hy+Math.sin(an)*L*(1-q)*.6;
+       G.globalAlpha=.55*q;G.strokeStyle=i%3?'#cfe8ff':'#8fd0ff';G.beginPath();G.moveTo(x0,y0);G.lineTo(x0+Math.cos(an)*L*.07,y0+Math.sin(an)*L*.045);G.stroke();}G.restore();
+     X.restore();G.restore();}},
+  // 4 — them: everything there is, pouring into their head at once
+  {d:1.4,draw(X,G,u,t){const W=V.W,H=V.H;voidPaint(X,G,t,{cy:.74,R:.42,warp:.8});const j=Math.sin(t*47)*H*.003;
+     drawBust(X,G,D.ch,W*.5+j,0,{zoom:1.35,hy:.34,hot:.9,rim:'#bfe0ff',rimDx:1.4});const hx=W*.5,hy=H*.36;
+     G.save();G.globalCompositeOperation='lighter';G.lineCap='round';for(let i=0;i<120;i++){const an=hash(i*2.3)*TAU,q=(t*(1.2+hash(i)*.9)+hash(i*5.5))%1,d0=Math.hypot(W,H)*.6*(1-q)+H*.08,len=H*(.04+hash(i*3)*.1)*(1-q*.5);
+       const x=hx+Math.cos(an)*d0,y=hy+Math.sin(an)*d0;G.globalAlpha=.75*Math.min(1,q*2);G.strokeStyle=i%4?'#dff0ff':'#8fb4ff';G.lineWidth=.8+q*1.4;G.beginPath();G.moveTo(x,y);G.lineTo(x+Math.cos(an)*len,y+Math.sin(an)*len);G.stroke();}
+     G.globalAlpha=.4+.3*Math.sin(t*30);G.drawImage(glowSprite('#bfe0ff'),hx-H*.12,hy-H*.1,H*.24,H*.2);G.restore();},
+   ev:[[.1,()=>SFX.heart()],[.55,()=>SFX.heart()],[1.0,()=>SFX.heart()]]},
+  // 5 — their eyes, with the ring in them
+  {d:.9,draw(X,G,u,t){drawEyesClose(X,G,D.ch,1,{zoom:1.05,dx:Math.sin(t*50)*.003,look:Math.sin(t*23)*.5,reflect:(g,x,y,r)=>{g.strokeStyle='#e8f4ff';g.lineWidth=Math.max(1,r*.09);g.beginPath();g.arc(x,y,r*.5,0,TAU);g.stroke();
+       for(let i=0;i<12;i++){const an=i/12*TAU+t*.3;g.globalAlpha=.4;g.beginPath();g.moveTo(x+Math.cos(an)*r*.55,y+Math.sin(an)*r*.55);g.lineTo(x+Math.cos(an)*r*.9,y+Math.sin(an)*r*.9);g.stroke();}}});},
+   ev:[[.1,()=>SFX.heart()]]},
+  // 6 — he walks up to them. No hurry.
+  {d:1.3,noFront:1,noShadow:1,bg:voidWorld(VR),under:()=>cutActors(),
    enter(){A.unveil=1;CU.at(A,-260,0,1);CU.at(D,120,0,-1);D.pose=copyPose(D.P.stance);POST.letter=1;},
-   upd(u,t,S,dt){A.vx=150;A.x=Math.min(A.x+150*dt,D.x-95);A.pose=gaitPose(A,1,dt);D.shk=.05;CU.cam(lerp(-120,40,E.io(u)),-130,1.35,0);}},
-  // 6 — a flick of the fingers
-  {d:1.3,noFront:1,noShadow:1,bg:voidWorld({cy:.3,R:.5}),under:()=>cutActors(),speed:[[0,1],[.3,.3,'o'],[.5,.3],[.62,1,'i'],[1.3,1]],impCol:col,
+   upd(u,t,S,dt){A.vx=150;A.x=Math.min(A.x+150*dt,D.x-95);A.pose=gaitPose(A,1,dt);D.shk=.05;CU.cam(lerp(-120,40,E.io(u)),-130,1.3,0);}},
+  // 7 — two fingers to the forehead
+  {d:1.3,noFront:1,noShadow:1,bg:voidWorld(VR),under:()=>cutActors(),speed:[[0,1],[.3,.3,'o'],[.5,.3],[.62,1,'i'],[1.3,1]],impCol:col,
    enter(S){A.unveil=1;CU.at(D,120,0,-1);CU.at(A,D.x-95,0,1);A.pose=flick;D.pose=copyPose(D.P.stance);S.imp=-9;S.go=0;},
-   upd(u,t,S,dt){if(t>.32&&!S.go){S.go=1;S.imp=t;D.vx=1700;D.vy=-520;D.y=-1;SFX.impact();shake(28);const c=CU.head(D);ring(c[0],c[1],col,10,260,.5,10);ring(c[0],c[1],'#ffffff',10,160,.35,5);burstFX(c[0],c[1],1,col,2);}
+   upd(u,t,S,dt){if(t>.32&&!S.go){S.go=1;S.imp=t;D.vx=1700;D.vy=-520;D.y=-1;SFX.impact();shake(28);const c=CU.head(D);ring(c[0],c[1],'#dff2ff',10,300,.55,10);ring(c[0],c[1],col,10,180,.4,5);burstFX(c[0],c[1],1,col,2);}
      if(S.go){D.vx*=Math.pow(.4,dt);fly(D,dt,1200,0);D.pose=D.P.tumble;}CU.cam(lerp(A.x+40,A.x+260,E.io(seg01(u,.25,1))),-130,lerp(1.6,1.1,E.o(u)),0);},
    impDyn(S,t){return t-S.imp<.04?'w':t-S.imp<.08?'a':t-S.imp<.11?'b':null;}},
-  // 7 — the void breaks and the world comes back
-  {d:1.3,
-   enter(S){A.unveil=1;CU.at(A,-60,0,1);CU.at(D,420,0,-1);D.y=0;D.pose=D.P.down;S.sh=[];for(let i=0;i<30;i++)S.sh.push({a:rnd(TAU),r:rnd(1,.1),s:rnd(.16,.05),sp:rnd(1.6,.8),rot:rnd(TAU)});POST.letter=1;},
-   upd(u,t){if(t>.75&&A.unveil)A.unveil=0;A.pose=breathe(A,A.P.stance);CU.cam(180,-140,1.0,0);},exit(){A.unveil=0;},
-   bg:X=>{drawStageBack(X);const S=CINE.S,u=CINE.t/1.3;if(u>.95||!S.sh)return;X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);G.globalCompositeOperation='lighter';
-     for(const q of S.sh){const d=V.H*.5*q.r+E.i(u)*V.W*q.sp,x=V.W/2+Math.cos(q.a)*d,y=V.H*.45+Math.sin(q.a)*d,k=V.H*q.s*(1-u*.6);
-       X.save();X.translate(x,y);X.rotate(q.rot+u*3);X.fillStyle='#07102e';X.beginPath();X.moveTo(0,-k);X.lineTo(k*.85,k*.55);X.lineTo(-k*.75,k*.6);X.closePath();X.fill();X.restore();
-       G.save();G.translate(x,y);G.rotate(q.rot+u*3);G.strokeStyle='#cfe8ff';G.globalAlpha=.8*(1-u);G.lineWidth=1.5;G.beginPath();G.moveTo(0,-k);G.lineTo(k*.85,k*.55);G.lineTo(-k*.75,k*.6);G.closePath();G.stroke();
-       G.fillStyle='#ffffff';G.fillRect(0,0,1.5,1.5);G.restore();}X.restore();G.restore();},
-   ev:[[.05,()=>{nz(.8,{type:'highpass',f0:3000,g:.2});SFX.crack();}]]},
+  // 8 — the void cracks like glass and falls away; the stage is still there
+  {d:1.8,noFront:1,
+   enter(S){A.unveil=1;CU.at(A,-60,0,1);CU.at(D,420,0,-1);D.y=0;D.pose=D.P.down;POST.letter=1;
+     const W=V.W,H=V.H,ox=W*.5,oy=H*.4,N=15,K=6,Dm=Math.hypot(W,H),P=[];S.o=[ox,oy];
+     for(let i=0;i<N;i++){P.push([]);const a0=i/N*TAU+(hash(i*3.1)-.5)*.28;for(let k=0;k<=K;k++){const r=k?Dm*.62*Math.pow(k/K,1.35)*(1+(hash(i*7.3+k)-.5)*.3):0,an=a0+(hash(i*2.9+k*4.1)-.5)*.14;P[i].push([ox+Math.cos(an)*r,oy+Math.sin(an)*r]);}}
+     S.sh=[];S.ed=[];for(let i=0;i<N;i++){const j=(i+1)%N;for(let k=0;k<K;k++){const poly=k?[P[i][k],P[i][k+1],P[j][k+1],P[j][k]]:[P[i][0],P[i][1],P[j][1]],cx=poly.reduce((a,q)=>a+q[0],0)/poly.length,cy=poly.reduce((a,q)=>a+q[1],0)/poly.length,n=S.sh.length;
+         S.sh.push({p:poly.map(q=>[q[0]-cx,q[1]-cy]),cx,cy,v:260+hash(n*3.3)*480,rs:(hash(n*5.1)-.5)*4,sh:hash(n*7.7)});S.ed.push([P[i][k],P[i][k+1]]);if(k)S.ed.push([P[i][k],P[j][k]]);}}},
+   upd(u,t){if(t>1.2&&A.unveil)A.unveil=0;A.pose=breathe(A,A.P.stance);CU.cam(180,-140,1.0,0);},exit(){A.unveil=0;},
+   bg:X=>{const S=CINE.S,t=CINE.t,br=.42,W=V.W,H=V.H;
+     if(t<br){X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);voidPaint(X,G,gameT,Object.assign({},VR,{floor:GSY()}));
+       const cr=Math.hypot(W,H)*.7*E.o(seg01(t,.02,br)),[cx0,cy0]=S.o;G.globalCompositeOperation='lighter';G.lineCap='round';
+       for(const[lw,al]of[[7,.18],[1.8,.95]]){G.lineWidth=lw;G.globalAlpha=al;G.strokeStyle='#e8f4ff';G.beginPath();
+         for(const e of S.ed){const d0=Math.hypot(e[0][0]-cx0,e[0][1]-cy0),d1=Math.hypot(e[1][0]-cx0,e[1][1]-cy0);if(Math.min(d0,d1)>cr)continue;const k=d1>cr?(cr-d0)/Math.max(1,d1-d0):1;
+           G.moveTo(e[0][0],e[0][1]);G.lineTo(lerp(e[0][0],e[1][0],clamp(k,0,1)),lerp(e[0][1],e[1][1],clamp(k,0,1)));}G.stroke();}
+       X.restore();G.restore();return;}
+     drawStageBack(X);const k=t-br;if(k>1.3)return;X.save();X.setTransform(1,0,0,1,0,0);G.save();G.setTransform(1,0,0,1,0,0);
+     for(const q of S.sh){const dx=q.cx-S.o[0],dy=q.cy-S.o[1],L=Math.hypot(dx,dy)||1,x=q.cx+dx/L*q.v*k,y=q.cy+dy/L*q.v*k+700*k*k,a=Math.max(0,1-k/1.1),r=q.rs*k,sc=1+k*.4;if(a<=0)continue;
+       const path=c=>{c.beginPath();q.p.forEach((p,i)=>{const px=(p[0]*Math.cos(r)-p[1]*Math.sin(r))*sc+x,py=(p[0]*Math.sin(r)+p[1]*Math.cos(r))*sc+y;i?c.lineTo(px,py):c.moveTo(px,py);});c.closePath();};
+       X.globalAlpha=a;path(X);X.fillStyle=mixC('#020716','#0a1a4a',q.sh);X.fill();G.globalCompositeOperation='lighter';G.globalAlpha=a*.85;path(G);G.strokeStyle='#cfe8ff';G.lineWidth=1.6;G.stroke();
+       G.fillStyle='#ffffff';for(let s2=0;s2<2;s2++)G.fillRect(x+(hash(q.sh*9+s2)-.5)*30,y+(hash(q.sh*5+s2)-.5)*20,1.5,1.5);}
+     X.restore();G.restore();},
+   ev:[[.05,()=>{nz(.5,{type:'highpass',f0:3000,g:.15});SFX.crack();}],[.42,()=>{nz(1,{type:'highpass',f0:2400,g:.22});SFX.crack();SFX.boom(.6);}]]},
  ]};}
 
 /* ---------------- his path ---------------- */
