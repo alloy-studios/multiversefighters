@@ -18,11 +18,10 @@ generated shape by shape, and all audio is synthesized in the browser.
 
 | Mode | |
 |---|---|
-| **Story** | Pick a shadow and play their four chapters: a prologue, a rival, and the Keeper of the Last Gate (or, for Grim, the one man who walked back out of it). Scenes between the fights are told in drawn shots with subtitles, and each fighter has their own ending. Lose a chapter and you can continue from it. |
+| **Paths** | Every special fighter has a path: four fights in a row, with a few lines before and after each one. The fights get harder as you go. Lose one and you can continue from it. |
 | **Versus CPU** | Pick your fighter and opponent, then a difficulty: Novice, Fighter, Master or Shadow. Best of three rounds, 99-second timer. |
 | **Versus Player** | Two players on one keyboard, or with gamepads. |
 | **Training** | A dummy that stands, crouches, blocks, jumps or fights back. Health regenerates, meter can be infinite, and the last combo is shown. |
-| **Lore** | The world, the eight fighters and their rivalries. Rival finishers you have already seen can be watched again from here. |
 
 ## Controls
 
@@ -43,7 +42,7 @@ generated shape by shape, and all audio is synthesized in the browser.
 - **Throws:** press `Throw` up close. Hold back to throw behind you. Press `Throw` as you're grabbed to break it.
 - **Cancels:** lights chain into each other, into heavies and into specials. Normals and specials cancel into your ultimate.
 - **Other keys:** `Esc` / `P` pauses and shows the full move list. `M` toggles sound.
-- **Story scenes:** `J` / `Enter` shows the next line and `Esc` skips the scene. During a rival finisher, press any button twice to skip it.
+- **Path scenes:** `J` / `Enter` shows the next line and `Esc` skips the scene.
 - **Gamepad:** stick or d-pad to move, `A` jump, `X` light, `Y` heavy, `B` special, `RB` throw, `LB` dash, `RT` ultimate, `Start` pause.
 
 ## Ultimates
@@ -63,52 +62,50 @@ exclamation text. Each fighter has one:
 | **GRIM** | Keeper of the Last Gate | scythe | *The Last Gate*: a gate grows out of the earth and opens, and he reaps your shadow into it |
 | **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then lightning strikes his raised fist and he drives it straight through you |
 | **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, a whirlwind of petals pins you, and she dashes straight through it |
+| **GOJO** | The Strongest *(limited time)* | none | *Hollow Purple*: the blindfold comes down, blue and red meet between his hands, and what he lets go erases a straight line through the stage. Below 35% health it becomes *Domain Expansion: Infinite Void* |
 
 Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
 grab-range hook and a ground eruption.
 
-## The story
+## Special fighters
 
-Nine years ago the sun stopped at the edge of the world. It has not risen and it
-has not set, and everything that lived in its light became a shadow of itself.
-Every shadow keeps one ember, the last colour it had. Carry enough embers
-through the Last Gate, the old stories say, and the sun will rise again. The
-Gate opens for one shadow at a time, and its keeper decides which.
+Some fighters are not on the roster all the time.
 
-| Rivals | |
+- **Limited time:** playable only while their event runs. The title screen and
+  the select screen show how long is left. Clear their path before the event
+  ends and they stay on your roster for good. After the event, they disappear
+  for anyone who didn't.
+- **Unlockable:** earned by playing, for example by winning matches, landing
+  ultimates, beating a difficulty or clearing a path. Until then they show on
+  the select screen as a locked card with the condition and your progress.
+  When you earn one, a notice pops up and they stay unlocked. There are none
+  yet; the first one is on the way.
+
+Progress is saved in your browser. To try every special fighter without
+saving anything, add `?unlock` to the address, e.g. `index.html?unlock`.
+
+### GOJO: The Strongest
+
+*Limited time: 26 September to 26 October 2026.* He fights with his hands in
+his pockets.
+
+| Input | Move |
 |---|---|
-| **Sol** · **Morrow** | *The Dawn Flame.* Morrow walked into the High Temple and took the fire its thirty-one monks had kept alive through the Dusk. Sol is the one she left breathing. |
-| **Ashen** · **Vex** | *The Gates of Ashfield.* Vex was paid to open Ashfield's gates. Ashen died holding them, went through the Last Gate, and walked back out. |
-| **Bolt** · **Goliath** | *The Stolen Storm.* Bolt broke the storm out of the Crucible's forge. Goliath was made to guard it. |
-| **Rin** · **Grim** | *Hana.* Rin's sister carried Petal Hill's embers through the Gate, and it kept her. |
-| **Grim** · **Ashen** | *The One Who Returned.* Nobody comes back out of the Gate. Ashen did. |
+| Light chain, overhead, low, sweep, air attacks | Kicks. The hands stay in the pockets. |
+| Heavy | A two-finger flick |
+| Special | *Blue*: an orb that drags you in and hits five times |
+| → + Special | *Red*: a blast that throws you across the stage |
+| ← + Special | *Infinity*: anything that touches him stops. A melee attacker freezes for a moment and he counters. Projectiles vanish. It doesn't stop ultimates. |
+| Ultimate | *Hollow Purple* |
+| Ultimate below 35% health | *Domain Expansion: Infinite Void* |
 
-### Rival finishers
+**His path, *The Strongest, Visiting*:** a stranger in a blindfold walks out of
+the rain and picks four fights: Bolt, Vex, Goliath and Grim.
 
-Each rivalry ends in its own film of about 40 seconds instead of the normal
-ultimate. It has subtitles, a score, and shots from every angle: bird's-eye,
-worm's-eye, over the shoulder and extreme close-up. Each one opens on a
-flashback graded to sepia, where only the light keeps its colour. Then comes an
-attack that exists only in that film, built out of the story.
-
-| Finisher | The attack | How to see it |
-|---|---|---|
-| **The Last Dawn** | The ghosts of the thirty-one monks kneel in a ring around Morrow, exactly as they knelt around the flame she stole. They stand, and Sol's open palm lands on her chest where her hand once closed on the fire. All thirty-one palms strike with it, and the Dawn Flame is torn out of her. | As Sol, finish Morrow with *Hundred Suns* at the High Temple |
-| **The Gates of Ashfield** | Ashen drives his blade into the field. The crack runs out and draws the walls of Ashfield around Vex in fire, and the gate rises behind him and closes with both of them inside. There is one cut in the dark, and then the walls fall outward. | As Ashen, finish Vex with *Crimson Requiem* at Ashfield |
-| **The Stolen Storm** | Goliath does not tear the storm out. He forges it out: he pins Bolt to the great anvil over the old cage and strikes three times, until the lightning goes back down through the grates and the furnaces light one after another. | As Goliath, finish Bolt with *Forgefall* at the Crucible |
-| **Hana** | Rin plants her sister's spear. Every petal that fell for nine years stops in the air and comes back to it, and lands around Grim in the shape of a blossom. She drops out of the moon onto him, and the Gate cracks open behind him. | As Rin, finish Grim with *Thousand Petals* at the Last Gate |
-| **The One Who Returned** | Grim hooks Ashen's ember out of his chest with the scythe. The scales climb out of the field: his ember goes on one side and the forty thousand of Ashfield on the other, until the beam finally settles. | As Grim, finish Ashen with *The Last Gate* at Ashfield |
-
-A finisher only plays on the ultimate that wins the deciding round. It works in
-Story, Versus CPU and Versus Player. Once you have seen one, you can watch it
-again from the Lore screen.
-
-The angles are drawn, not modelled. The sets are laid out with a pinhole
-camera the way a background painter rules vanishing lines. The characters are
-flat drawings for each view: front, back, from above, and eyes in close-up.
-They are placed and scaled by depth. Anything standing in front of a light cuts
-itself out of the glow layer, so it reads as a silhouette against it.
+The event dates are in `index.html`: search for `SPECIAL.gojo`. `from` is the
+first day and `to` is the day after the last (local dates). Remove the entry
+to make him a permanent fighter.
 
 ## Stages
 
@@ -133,7 +130,10 @@ wisps, grave mist, rain with lightning, or blossom petals.
   ramps for slow motion, camera moves with roll, backdrop swaps, letterboxing
   and two-tone impact frames.
   Shots can also be drawn by hand for their own camera angle. That is how the
-  story scenes and the rival finishers get angles other than side-on.
+  path scenes and Gojo's ultimates get angles other than side-on. The angles
+  are drawn, not modelled: sets are laid out with a pinhole camera the way a
+  background painter rules vanishing lines, and the characters are flat
+  drawings for each view, placed and scaled by depth.
 - **Audio:** WebAudio only. Filtered noise gives the swings and impacts,
   detuned partials the steel, and sub drops the weight. A convolution reverb
   and a quiet taiko pattern sit under the fight.
