@@ -4001,8 +4001,10 @@ MOVIES.gatesAshfield=(A,D)=>{const red=A.ch.col,cy=D.ch.col,S0={};
      if(h>30){const edge=(a,b)=>{const p=P(a[0],-h,a[1]),q=P(b[0],-h,b[1]);if(!p||!q)return;G.save();G.globalCompositeOperation='lighter';for(const[lw,c,al]of[[14,red,.35],[4,mixC(red,'#ffffff',.4),.9]]){G.globalAlpha=al;G.strokeStyle=c;G.lineWidth=lw;G.beginPath();G.moveTo(p[0],p[1]);G.lineTo(q[0],q[1]);G.stroke();}G.restore();};
        edge([-SQ,-SQ],[-SQ,SQ]);edge([SQ,-SQ],[SQ,SQ]);edge([-SQ,SQ],[-360,SQ]);edge([360,SQ],[SQ,SQ]);
        const fs=q=>Math.min(q[2]*55,V.H*.035);
-       for(let x=-SQ;x<=SQ;x+=70){const q=P(x,-h,SQ);if(q&&Math.abs(x)>380)flame(X,G,q[0],q[1],fs(q),red,t+x,.45);}
-       for(const s of[-1,1])for(let z=-SQ+60;z<=SQ;z+=80){const q=P(s*SQ,-h,z);if(q)flame(X,G,q[0],q[1],fs(q),red,t+z*1.3,.45);}}},
+       const fire=q=>{const r=fs(q)*(2.2+.5*Math.sin(t*9+q[0]*.05));G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.55;G.drawImage(glowSprite(red),q[0]-r,q[1]-r*1.5,r*2,r*1.8);G.restore();};
+       for(let x=-SQ;x<=SQ;x+=45){const q=P(x,-h,SQ);if(q&&Math.abs(x)>380)fire(q);}
+       for(const s of[-1,1])for(let z=-SQ+40;z<=SQ;z+=55){const q=P(s*SQ,-h,z);if(q)fire(q);}
+       if(rnd()<.8){const x=rnd(V.W);pt({x,y:rnd(V.H*.35,V.H*.1),vx:rnd(20,-20),vy:-rnd(80,20),l:rnd(1.2,.5),s:rnd(3,1.5),c:red,t:'ember',g:-20});}}},
    sub:['ashen','This time, the gates hold.'],subAt:1.3,ev:[[.1,()=>SFX.boom(1)],[2.5,()=>{SFX.impact();shake(14);}]]},
   // 11 — dark inside the walls: two pairs of eyes, then the one cut
   {d:2.4,draw(X,G,u,t,S){const W=V.W,H=V.H,cut=t>=1.3&&t<1.42,after=t>=1.42;X.fillStyle='#030102';X.fillRect(0,0,W,H);
