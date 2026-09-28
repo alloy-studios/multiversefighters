@@ -1,84 +1,92 @@
-# multiversefighters
+# UMBRA — a duel of shadows
 
-Single-file browser fighter — open `index.html`, no build step.
+A 2D fighting game in the spirit of Street Fighter, Dragon Ball FighterZ and
+Shadow Fight, played entirely in silhouette. Every fighter is pure black with
+exactly one colour: a pair of glowing eyes that leave trails when they move,
+a lit blade edge, a burning hammer head. The stages are bright, layered
+landscapes behind them, so every pose reads through its outline.
 
-## Visual overhaul (cutscenes · characters · animation · movement · VFX)
+Everything is a single `index.html`. There are no images, sprites or sound
+files: the fighters are drawn procedurally from a skeleton, the stages are
+generated shape by shape, and all audio is synthesized in the browser.
 
-### Ultimates are real cutscenes now
-- **U at 100%** → super flash: the world freezes and a comic-style cut-in band slides across with the fighter's portrait and the move name.
-- Then a real **startup move** plays in gameplay (rush, projectile or ground eruption depending on the fighter). The cutscene **only plays if that startup connects** — a whiff or a block just burns the meter, so cinematics stay special.
-- Every fighter has a bespoke multi-shot cinematic (camera moves, dutch angles, eye cut-ins, comic panels, impact frames, onomatopoeia, running hit/damage counter):
-  - **KAGE** palm strike → shadow clones juggle through the sky → spiral sphere → dome explosion
-  - **REIKA** pass-through slash → frost → the moon rises → giant crescent fang → the ice shatters
-  - **VANTA** grapple reel → lights-out brawl lit only by the hits → perched against the moon, cape spread → dive → shadow blast
-  - **AEGIS** shield bash → the shield ricochets across comic panels → leap and slam with a hex barrier dome
-  - **PYRA** fire pillar → rune circle → a sun forms over her staff → hurled → eruption
-  - **NULL-9** visor lock-on HUD → capacitors spin up → the beam → explosion on the horizon
-  - **SYLVA** roots bind → spectral arrow draw → world tree → arrow rain → flowers bloom
-  - **ZAP** iris-in TA-DA → hammerspace mallet → tornado full of pianos and anvils → anvil drop → iris-out
-  - **MORGRIM** scythe hook → void realm gate rises, chains bind → the soul is pulled out → REAP → the gate slams
-  - **TITANA** hammer recall → the storm strikes the hammer → rise above the clouds → GOD BOLT
-  - **RONIN** back-to-back sheathe in frozen time → sliced panels → a thousand hanging cuts → *click* → the frame shatters
-  - **NOVA** gravity well → among the stars a star is born → black hole → supernova
-- The AI (Veteran/Master) can land its ultimate on you too — same cutscene, roles swapped.
-- **Match intro** (vs CPU, once per match, skippable with J/K/SPACE/ENTER): entrance shots with name cards, then a VS split. **K.O. finish**: freeze-frame impact, slow-mo launch, comic K.O., the winner's victory pose, then ROUND n / FIGHT!
+**Play:** open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari).
 
-### Characters
-- New skeleton renderer: FK arms, IK foot planting, tapered limbs with hands and boots, torso/pelvis shapes, cel shading (the part minus itself nudged toward the light), coloured ink outlines drawn as one silhouette per limb so joints never show seams.
-- Anime faces with expressions (neutral, fierce, shout, hurt, grin, eyes-closed); eyes switch to a detailed treatment once a head is big on screen, so cutscene close-ups hold up.
-- Every fighter re-dressed as an homage to their source (spiky blond ninja with headband and whiskers; bat-eared cowl and scalloped cape; blue suit with chevron and heater shield; Bleach-style greatsword; winged circlet and storm hammer; rubber-hose toon; samurai with mempo and scabbard…) — archetypes and silhouettes, no copied logos.
-- Verlet cloth for capes, scarves, coat tails, braids and long hair — they trail dashes and lift on falls.
+---
 
-### Animation
-- Per-fighter fighting stances instead of one shared idle; procedural IK gait locked to ground speed (no foot sliding) with run styles per fighter (ninja run, heavy mech stomp, toon scramble, hover glide).
-- Every state blends into the next instead of snapping; attacks keep anticipate → snap → overshoot → settle, now with smear "multiples" on strike frames and filled weapon swooshes.
-- Hit reactions by hit height, launches tumble, hard landings knock down, get-up roll, air recovery flip.
+## Modes
 
-### Movement
-- **I = Super Dash** — homing flight straight at the opponent (once per airtime), shoulder-checks on arrival, attack out of it.
-- Dash, then hold forward to **sprint**; **wall cling + wall jump** at the arena edges; pre-jump squat; **tap SPACE for a short hop**, hold for full height.
+| Mode | |
+|---|---|
+| **Versus CPU** | Pick your fighter and opponent, then a difficulty: Novice, Fighter, Master or Shadow. Best of three rounds, 99-second timer. |
+| **Versus Player** | Two players on one keyboard, or with gamepads. |
+| **Training** | A dummy that stands, crouches, blocks, jumps or fights back. Health regenerates, meter can be infinite, and the last combo is shown. |
 
-### VFX
-- Cheap bloom pass (auto-disables on slow machines; **B** toggles it), cached glow sprites for particles, anime hit sparks, impact frames on big hits, speed lines, ground cracks, victim hit-flash.
-- Specials now run on game time (they pause during hitstop, slow-mo and cutscenes).
+## Controls
 
-### Also
-- New HUD (slanted health bars with trailing damage, portraits, segmented meters, combo counters for both sides), comic-style select screen with bust portraits, stages with sun/moon, god rays, and per-stage weather.
-- Fixed: NULL-9's Plasma Railgun never dealt damage (it referenced an undefined variable).
+| | Player 1 | Player 2 |
+|---|---|---|
+| Move / crouch | `A` `D` / `S` | `←` `→` / `↓` |
+| Jump | `W` or `Space` | `↑` |
+| Light (press three times for a chain) | `J` | `Numpad 1` or `,` |
+| Heavy | `K` | `Numpad 2` or `.` |
+| Special | `L` | `Numpad 3` or `/` |
+| Throw | `I` | `Numpad 4` or `;` |
+| Ultimate (full meter) | `U` | `Numpad 5` or `'` |
+| Dash | `Shift`, or double-tap a direction | `Numpad 0` / right `Shift` |
 
-## Previous update
-Animation
-Knee direction fix — every knee value was positive, so legs bent forward and the run read as backwards. Now negative across all poses.
-Proper gait — thigh swings fore/aft, knee tucks on the rear swing, arms counter-swing, two bobs per cycle.
-Attacks went 3 phases → 4: anticipate → snap → follow-through → settle. The overshoot is extrapolated from the windup→strike vector, so every attack got it without new poses.
-Motion smear trails — FK solves the weapon tip each frame into a tapered ribbon.
-Squash & stretch on takeoff, landing, and strike frames.
-Secondary motion — hair/cape spring that lags the body, head counter-rotates against torso lean.
-Root motion — attacks step into the hit.
-New poses: skid, fast-fall, air-dash. Idle got two breathing frequencies plus a weight shift.
-Movement
-Momentum-based instead of lerp-to-target; +23% top speed, heavier gravity
-Double jump (with flip), air dash (aimable W/S), fast fall, skid on hard reversals, dash attack that keeps momentum
-Jump moved to SPACE so W/S could become aim directions
-Dummy tumbles when launched and wall-bounces
-Ultimate charges
-12 unique charge stances — all 12 previously used the same arms-back pose
-12 unique charge routines — all 12 previously used identical converging orbs
-Per-ultimate camera — Vanta charges near-black, Ronin desaturated and near-frozen
-Opponents
-Dummy became five levels: Dummy, Rookie, Fighter, Veteran, Master
-updPlayer generalized to updFighter(f, dt, input) — the AI runs your exact code, so it can't do anything you can't
-Brain: approach, retreat, guard, anti-air, dash-in, zoning, low pokes, jump-ins, specials; reacts to your swings, turtles when low
-You now have HP — hitstun, blocking (84% reduction), K.O. with slow-mo, round reset, win tally
-Opponent + difficulty pickers on the select screen
-Camera
-Was locked wide; now tracks the midpoint and zooms on separation (2.13× close → 1.05× full stage), plus zoom kick on heavies, pullback for ultimates, snap to the loser on K.O.
-Real parallax — skyline layers lag the camera at 55/37/19%
-Bugs fixed
-hl() would have mutated shared POSE constants
-Tornado and Supernova left the player hovering after the ult
-Key collision in the ultimate step scheduler
-Dummy's st field collided with the new state string
-Viewport reporting 0 during layout, and window resize mid-fight, never recovered
-Art
-Redrew Aegis's shield — the concentric-disc-with-a-star read as a real trademarked design; now an original heater shield with a chevron band.
+- **Block:** hold away from your opponent. Crouch-block (`↙`) for lows. Overheads must be blocked standing.
+- **Directional attacks:** `→ + Heavy` is an overhead. `↓ + Light` is a low. `↓ + Heavy` is a sweep that knocks down.
+- **Specials:** `Special`, `→ + Special` (rush) and `← + Special` (rising anti-air, invincible on startup).
+- **Throws:** press `Throw` up close. Hold back to throw behind you. Press `Throw` as you're grabbed to break it.
+- **Cancels:** lights chain into each other, into heavies and into specials. Normals and specials cancel into your ultimate.
+- **Other keys:** `Esc` / `P` pauses and shows the full move list. `M` toggles sound.
+- **Gamepad:** stick or d-pad to move, `A` jump, `X` light, `Y` heavy, `B` special, `RB` throw, `LB` dash, `RT` ultimate, `Start` pause.
+
+## Ultimates
+
+Ultimates cost a full meter. The opening strike has to connect. When it does,
+the fight cuts away to a short animated sequence: close-ups, whip pans, slow
+motion, and single two-tone impact frames. There are no speech bubbles and no
+exclamation text. Each fighter has one:
+
+| Fighter | | Weapon | Ultimate |
+|---|---|---|---|
+| **ASHEN** | The Crimson Revenant | odachi | *Crimson Requiem*: he vanishes, eight cuts hang in the air around you against a red moon, then all bloom at once |
+| **VEX** | Blade of the Silent Moon | twin daggers | *Moonless Night*: the light dies until only her eyes remain, and each cut is lit for a single frame |
+| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he hauls you into a burning sky and drives you back through the ground |
+| **SOL** | The Last Monk | open hand | *Hundred Suns*: a storm of palms, a rising kick, and one strike from above the clouds |
+| **MORROW** | Witch of the Hollow Mire | hex staff | *Hollow Moon*: hands of shadow climb out of the ground and drag you into her sigil |
+| **GRIM** | Keeper of the Last Gate | scythe | *The Last Gate*: a gate grows out of the earth and opens, and he reaps your shadow into it |
+| **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then he calls the storm down through one punch |
+| **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, then she dives out of a pink sun |
+
+Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
+air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
+grab-range hook and a ground eruption.
+
+## Stages
+
+Ashfield · Silent Grove · The Crucible · High Temple · Hollow Mire · The Last Gate · Zenith · Petal Hill
+
+Each stage has parallax silhouette layers, atmospheric fog, a blurred
+foreground and its own weather: embers, falling leaves, forge sparks, marsh
+wisps, grave mist, rain with lightning, or blossom petals.
+
+## How it's built
+
+- **Fighters:** each fighter is a two-bone skeleton. The legs are solved by
+  inverse kinematics, so feet stay planted. Every attack is a keyframed clip
+  with anticipation, a snap, follow-through and settle. Hair, coats, scarves
+  and tassels are verlet cloth that reacts to motion.
+- **Hitboxes** come from the pose itself: a sword hits where the drawn blade
+  is, and a kick where the leg is.
+- **Rendering:** there are two layers. Ink goes on the main canvas. Light
+  (eyes, edges, energy, trails) goes on a glow canvas, which is added back and
+  bloomed. That keeps the blacks pure black.
+- **Cinematics:** the engine plays shot lists in *story time*, with speed
+  ramps for slow motion, camera moves with roll, backdrop swaps, letterboxing
+  and two-tone impact frames.
+- **Audio:** WebAudio only. Filtered noise gives the swings and impacts,
+  detuned partials the steel, and sub drops the weight. A convolution reverb
+  and a quiet taiko pattern sit under the fight.
