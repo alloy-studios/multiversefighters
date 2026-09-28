@@ -3287,7 +3287,7 @@ function templeSet(c,g,P,o){
   const [s0,s1,sh]=TEMPLE.stairs;for(let i=0;i<8;i++){const z=s0+i*(s1-s0)/8;items.push({z:z+18,d:()=>{pbox(c,P,-260,260,-(i+1)*sh/8,0,z,s1+40,ink);if(o.stepEdge){const a=P(-260,-(i+1)*sh/8,z),b=P(260,-(i+1)*sh/8,z);if(a&&b){c.strokeStyle=o.stepEdge;c.lineWidth=Math.max(1,a[2]*3);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();}}}});}
   const gz=TEMPLE.gateZ,gy=-sh;items.push({z:gz,d:()=>{for(const s of[-1,1])pbox(c,P,s*220-22,s*220+22,gy-380,gy,gz-22,gz+22,ink);
     pbox(c,P,-310,310,gy-420,gy-385,gz-30,gz+30,ink);pbox(c,P,-250,250,gy-330,gy-310,gz-18,gz+18,ink);}});
-  const [bx,bz]=TEMPLE.brz;items.push({z:bz,d:()=>{pbox(c,P,bx-22,bx+22,-70,0,bz-22,bz+22,ink);pbox(c,P,bx-55,bx+55,-92,-70,bz-55,bz+55,ink);
+  const [bx,bz]=TEMPLE.brz;if(!o.noBrz)items.push({z:bz,d:()=>{pbox(c,P,bx-22,bx+22,-70,0,bz-22,bz+22,ink);pbox(c,P,bx-55,bx+55,-92,-70,bz-55,bz+55,ink);
     if(o.fire>0){const p=P(bx,-92,bz);if(p)flame(c,g,p[0],p[1],p[2]*34,o.fireCol||'#ffc23a',gameT,o.fire);}
     if(o.smoke){const p=P(bx,-92,bz);if(p){c.save();c.fillStyle='rgba(60,60,70,.35)';for(let i=0;i<6;i++){const u=((gameT*.3+i/6)%1);c.beginPath();c.arc(p[0]+Math.sin(u*6+i)*p[2]*20,p[1]-u*p[2]*260,p[2]*(12+u*40),0,TAU);c.fill();}c.restore();}}}});
   if(o.figs)items.push(...o.figs);
@@ -3338,6 +3338,8 @@ function renderDrawnShot(C,sh){
   X.setTransform(1,0,0,1,cam.shx,cam.shy);X.globalAlpha=1;X.globalCompositeOperation='source-over';G.setTransform(1,0,0,1,cam.shx,cam.shy);G.clearRect(-50,-50,V.W+100,V.H+100);
   sh.draw(X,G,u,C.t,C.S);
   X.setTransform(1,0,0,1,0,0);G.setTransform(1,0,0,1,0,0);
+  // an impact frame: the finished drawing thresholded to two flat tones, no light at all
+  const fk=sh.flat&&sh.flat.find(q=>C.t>=q[0]&&C.t<q[1]);if(fk){const k=IMPK(fk[2],C,sh);twoTone(k.bg,k.ink,sh.flatThr||40);return;}
   drawPartsMain(X,'#222');drawEffs(X,false);drawPartsGlow(G);drawEffs(G,true);
   if(sh.grade==='past')gradePast();
   X.save();X.globalCompositeOperation='lighter';X.drawImage(GL,0,0);X.restore();bloom(POST.bloom);X.drawImage(VIG,0,0,V.W,V.H);
@@ -3370,21 +3372,21 @@ MOVIES.lastDawn=(A,D)=>{const gold='#ffc23a',vio=D.ch.col,S0={ring:monkRing()};
  const push=Q('monk',{fx:[62,-40],y:30,lean:.5,ch:.1,aF:[1.52,0,0],aB:[1.62,0,0],gF:1,gB:1});
  return{movie:1,title:null,dmg:99999,hits:31,shots:[
   // 1 — his eyes open
-  {d:2.8,fin:.8,draw(X,G,u){drawEyesClose(X,G,A.ch,E.io(seg01(u,.18,.62)),{zoom:.92+u*.12,brow:.25});},sub:['sol','Thirty-one brothers.'],subAt:.9,
+  {d:2.5,fin:.8,draw(X,G,u){drawEyesClose(X,G,A.ch,E.io(seg01(u,.18,.62)),{zoom:.92+u*.12,brow:.25});},sub:['sol','Thirty-one brothers.'],subAt:.9,
    ev:[[.05,()=>{SFX.bell();SFX.pad([73.4,110,146.8],18,.045);}],[1.3,()=>SFX.heart()]]},
   // 2 — flashback, from above: the ring around the Dawn Flame
-  {d:3,grade:'past',draw(X,G,u){const P=pcam({x:0,y:-1560+u*180,z:1100,pitch:PI/2,yaw:.15+u*.28,f:V.H*1.25});
+  {d:2.6,grade:'past',draw(X,G,u){const P=pcam({x:0,y:-1560+u*180,z:1100,pitch:PI/2,yaw:.15+u*.28,f:V.H*1.25});
      templeSet(X,G,P,{fire:1,sky:NIGHT,floorLight:(c,g,P)=>pglow(c,P,0,1100,560,'#ffb040',.6),figs:S0.ring.map(m=>({x:m.x,z:m.z,d:()=>topFig(X,P,m.x,m.z,'kneel',1,0,1100)}))});},
    sub:['sol','Nine years of dusk. They kept the last dawn burning.']},
   // 3 — flashback, low angle up the stairs: she is at the gate, the night behind her burning violet
-  {d:3,grade:'past',draw(X,G,u){const P=pcam({x:0,y:-30,z:1700+u*80,pitch:-.2,f:V.H*1.1}),gy=-TEMPLE.stairs[2],gz=TEMPLE.gateZ;
+  {d:2.8,grade:'past',draw(X,G,u){const P=pcam({x:0,y:-30,z:1700+u*80,pitch:-.2,f:V.H*1.1}),gy=-TEMPLE.stairs[2],gz=TEMPLE.gateZ;
      templeSet(X,G,P,{fire:0,sky:NIGHT,occlude:1,stepEdge:'#3a3448',backdrop:(c,g,P)=>{
          const q=P(0,gy-160,2900);if(q){g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.75;const r=q[2]*330;g.drawImage(glowSprite(vio),q[0]-r,q[1]-r,r*2,r*2);
            g.globalAlpha=.35;pfill(g,P,[[-198,gy,gz+30],[198,gy,gz+30],[198,gy-385,gz+30],[-198,gy-385,gz+30]],vio);g.restore();}},
        figs:[{z:2520,d:()=>pfig(X,G,P,D.ch,0,2520,{y:gy,pose:'stand',hot:.8,rim:mixC(vio,'#ffffff',.45),rimDx:1.1})}]});},
    sub:['morrow','Light is wasted on the faithful.'],ev:[[.2,()=>{SFX.hex();SFX.wind(3);}]]},
   // 4 — flashback, over the monks' shoulders: the flame between them and her
-  {d:2.8,grade:'past',draw(X,G,u){const P=pcam({x:-30,y:-235,z:210+u*50,pitch:.1,yaw:.04,f:V.H*1.0});const mz=1660-u*150,mx=190;
+  {d:2.6,grade:'past',draw(X,G,u){const P=pcam({x:-30,y:-235,z:210+u*50,pitch:.1,yaw:.04,f:V.H*1.0});const mz=1660-u*150,mx=190;
      const monk=(x,z,pose)=>({x,z,d:()=>pfig(X,G,P,MONK,x,z,{back:true,pose,rim:'#8a6a40',rimDx:1.2,still:1})});
      templeSet(X,G,P,{fire:1.3,sky:NIGHT,occlude:1,floorLight:(c,g,P)=>{pglow(c,P,0,1100,520,'#ffb040',.7);pglow(c,P,mx,mz,300,vio,.35);},
        figs:[monk(-240,560,'loose'),monk(255,540,'loose'),monk(-50,790,'stand'),
@@ -3392,7 +3394,7 @@ MOVIES.lastDawn=(A,D)=>{const gold='#ffc23a',vio=D.ch.col,S0={ring:monkRing()};
            pfig(X,G,P,D.ch,mx,mz,{pose:'stand',hot:.7,rim:mixC(vio,'#ffffff',.3),rimDx:-1});}}]});},
    sub:['elder','This flame is not yours, witch.']},
   // 5 — flashback, side on: she walks through them
-  {d:3,grade:'past',impCol:vio,noFront:1,bg:bgStageTint('#040212',.72),
+  {d:2.6,grade:'past',impCol:vio,noFront:1,bg:bgStageTint('#040212',.72),
    enter(S){A.hide=1;S.m=[];for(let i=0;i<5;i++){const m=puppet(MONK,0);m.x=-330+i*150;m.y=0;m.face=1;m.pose=copyPose(m.P.stance);m.alpha=1;S.m.push(m);}CINE.extra=S.m;
      CU.at(D,430,0,-1);D.alpha=1;D.hide=0;S.imp=-9;},
    upd(u,t,S,dt){D.vx=-190;D.x=430-190*t;D.face=-1;D.pose=gaitPose(D,1,dt);
@@ -3402,7 +3404,7 @@ MOVIES.lastDawn=(A,D)=>{const gold='#ffc23a',vio=D.ch.col,S0={ring:monkRing()};
    impDyn(S,t){return t-S.imp<.035?'ai':null;},preGlow:()=>gradePast(),
    exit(){CINE.extra=[];}},
   // 6 — flashback, close on the brazier: her hand closes over the flame
-  {d:3,grade:'past',draw(X,G,u,t){const W=V.W,H=V.H,cx=W*.46,by=H*.7,fire=u<.55?1:1-seg01(u,.55,.66),shut=seg01(u,.5,.6);
+  {d:2.8,grade:'past',draw(X,G,u,t){const W=V.W,H=V.H,cx=W*.46,by=H*.7,fire=u<.55?1:1-seg01(u,.55,.66),shut=seg01(u,.5,.6);
      const g1=X.createLinearGradient(0,0,0,H);g1.addColorStop(0,'#0a0908');g1.addColorStop(1,'#16110c');X.fillStyle=g1;X.fillRect(0,0,W,H);
      // the flame lights the wall behind: that is what the hand reads against
      const wl=X.createRadialGradient(cx,by-H*.18,0,cx,by-H*.18,H*.75);wl.addColorStop(0,`rgba(255,196,120,${.62*fire+.04})`);wl.addColorStop(.55,`rgba(160,110,60,${.22*fire})`);wl.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=wl;X.fillRect(0,0,W,H);
@@ -3426,49 +3428,70 @@ MOVIES.lastDawn=(A,D)=>{const gold='#ffc23a',vio=D.ch.col,S0={ring:monkRing()};
        sg.addColorStop(0,`rgba(120,114,106,${.2*sa*(1-q)})`);sg.addColorStop(1,'rgba(120,114,106,0)');X.fillStyle=sg;X.fillRect(x-r,y-r,r*2,r*2);}}},
    sub:['sol','She took it with her bare hand.'],subAt:1.3,ev:[[.5,()=>SFX.dash()],[1.55,()=>SFX.sizzle()]]},
   // 7 — flashback, from above: the ring is broken; one of them is still kneeling
-  {d:3,grade:'past',fout:.4,foutCol:'#ffffff',draw(X,G,u){const P=pcam({x:0,y:-1650-u*380,z:1100,pitch:PI/2,yaw:.42,f:V.H*1.25});
+  {d:2.5,grade:'past',fout:.4,foutCol:'#ffffff',draw(X,G,u){const P=pcam({x:0,y:-1650-u*380,z:1100,pitch:PI/2,yaw:.42,f:V.H*1.25});
      templeSet(X,G,P,{fire:0,smoke:1,sky:NIGHT,figs:[...S0.ring.map(m=>({x:m.x,z:m.z,d:()=>topFig(X,P,m.x+m.dx,m.z+m.dz,'lie',.9,m.x*1.6+m.j*80,1100+(m.z-1100)*1.6)})),
        {x:40,z:1010,d:()=>topFig(X,P,40,1010,'kneel',.78,0,1100)}]});
      X.strokeStyle='rgba(200,210,230,.22)';X.lineWidth=1;for(let i=0;i<70;i++){const x=(hash(i*3.3)*V.W+gameT*40)%V.W,y=((hash(i*7.1)+gameT*1.6)%1)*V.H;X.beginPath();X.moveTo(x,y);X.lineTo(x-4,y+22);X.stroke();}},
    sub:['sol','I was the only one she left breathing.'],ev:[[.1,()=>SFX.rain(3)]]},
   // 8 — present: her face, lit from the side by his light
-  {d:2.8,fin:.2,draw(X,G,u,t){const W=V.W,H=V.H;const P=pcam({x:-60,y:-150,z:200,pitch:-.02,yaw:.25,f:V.H*.9});templeSet(X,G,P,{fire:0,sky:DAWN});
+  {d:2.6,fin:.2,draw(X,G,u,t){const W=V.W,H=V.H;const P=pcam({x:-60,y:-150,z:200,pitch:-.02,yaw:.25,f:V.H*.9});templeSet(X,G,P,{fire:0,sky:DAWN});
      X.fillStyle='rgba(220,150,110,.28)';X.fillRect(0,0,W,H);
      const sc=H/118*(1+u*.04);X.save();G.save();X.translate(W*.62,H*1.78+(1-u)*H*.02);X.scale(sc,sc);G.setTransform(X.getTransform());rimFront(X,G,D.ch,{pose:'stand',look:-1,hot:.35,still:0},'#ffcf70',-2.2);X.restore();G.restore();
      if(rnd()<.5)pt({x:rnd(W*.45),y:rnd(H),vx:rnd(40,10),vy:-rnd(30,5),l:rnd(2,1),s:rnd(3,1.5),c:gold,t:'ember',g:-10});},
    sub:['morrow','...You kept one ember.'],subAt:.7,ev:[[.3,()=>SFX.heart()]]},
-  // 9 — worm's-eye: a sun forms between his palms
-  {d:3,draw(X,G,u,t,S){const P=pcam({x:0,y:-14,z:-30-u*40,pitch:-.6,f:V.H*.95});
-     templeSet(X,G,P,{fire:0,sky:DAWN,occlude:1,figs:[{z:230,d:()=>{const f=pfig(X,G,P,A.ch,0,230,{pose:'palms',hot:1,rim:'#ffcf70',rimDx:1.2});if(!f||!f.r)return;const k=f.p[2],h=f.r.hands,px=f.p[0]+(h[0][0]+h[1][0])/2*k,py=f.p[1]+(h[0][1]+h[1][1])/2*k-6*k,r=k*lerp(8,24,E.io(u));
-       G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.6;G.drawImage(glowSprite(gold),px-r*2.2,py-r*2.2,r*4.4,r*4.4);G.globalAlpha=1;G.drawImage(glowSprite(gold,1),px-r,py-r,r*2,r*2);G.restore();S.orb=[px,py];}}]});
-     if(S.orb&&rnd()<.9){const a=rnd(TAU),r=rnd(260,140);pt({x:S.orb[0]+Math.cos(a)*r,y:S.orb[1]+Math.sin(a)*r,vx:-Math.cos(a)*r*2.6,vy:-Math.sin(a)*r*2.6,l:.38,s:2.4,c:gold,t:'spark',g:0,dr:.5});}},
-   sub:['sol','No. I kept all of them.'],subAt:.9,ev:[[.2,()=>SFX.charge(1.4)]]},
-  // 10 — his brothers stand up behind him
-  {d:3,draw(X,G,u){const P=pcam({x:0,y:-135,z:-260+u*90,pitch:.03,f:V.H*1.0});const pose=u>.84?'push':'palms',figs=[];
-     for(let r=0;r<4;r++)for(let i=0;i<(r===3?7:8);i++){const n=r*8+i,x=(i-(r===3?3:3.5))*118+(r%2)*30,z=560+r*185,a=clamp((u*1.7-n/31*.95)*4,0,1);
-       if(a>0)figs.push({x,z,d:()=>{X.save();X.globalCompositeOperation='lighter';pfig(X,G,P,MONK,x,z,{pose,ink:'#a8761c',alpha:a*.62,noGlow:1,still:1});X.restore();const q=P(x,-168,z);if(q){G.save();G.globalAlpha=a*.5;const rr=q[2]*26;G.drawImage(glowSprite(gold),q[0]-rr,q[1]-rr,rr*2,rr*2);G.restore();}}});}
-     figs.push({z:260,d:()=>pfig(X,G,P,A.ch,0,260,{pose,hot:1})});
-     templeSet(X,G,P,{fire:0,sky:DAWN,figs,floorLight:(c,g,P)=>pglow(c,P,0,700,700,gold,.35*u)});},
-   ev:[[.1,()=>SFX.choir([146.8,185,220,293.7],7,.05)],[2.75,()=>SFX.swing(.7)]]},
-  // 11 — side on: the strike, and all of them strike with him
-  {d:1.35,speed:[[0,.1],[.12,.1],[.28,1,'i'],[1.35,1]],bg:bgBurst(gold,'#140a00',.3,()=>CU.chest(A)),noFront:1,
-   enter(S){A.hide=0;D.hide=0;CINE.extra=[];CU.at(A,-60,0,1);A.pose=push;A.hot=1;CU.at(D,70,0,-1);D.pose=D.P.hurtH;const c=CU.chest(D);SFX.impact();shake(24);S.bx=A.x+64;S.by=c[1];S.bt=gameT;
-     burstFX(c[0],c[1],1,gold,2);ring(c[0],c[1],gold,10,280,.6,10);ring(c[0],c[1],'#ffffff',10,180,.4,5);},
-   imp:[[0,.012,'w'],[.012,.024,'a'],[.024,.036,'b']],
-   upd(u,t,S,dt){if(t>.12&&!S.go){S.go=1;D.vx=1150;D.vy=-240;D.y=-1;}if(S.go){D.vx*=Math.pow(.2,dt);fly(D,dt,2200,1);D.pose=D.y<-5?D.P.tumble:D.P.down;}
-     CU.cam(lerp(40,260,E.io(seg01(u,.1,.8))),-120,lerp(1.5,1.0,E.o(u)),0);},
-   glow(g){const S=CINE.S;for(let i=1;i<=10;i++){g.save();g.translate(A.x-i*24,-i*7);g.scale(1-i*.035,1-i*.035);g.globalAlpha=Math.max(0,.34-i*.026);drawBody(g,MONK,push,1,gameT,{lite:1,nosim:1,inkCol:mixC(gold,'#000000',.25)});g.restore();}
-     const a=Math.max(0,1-(gameT-S.bt)*1.3);if(a<=0)return;const L=900;g.globalAlpha=a;const gr=g.createLinearGradient(S.bx,0,S.bx+L,0);gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.3,rgba(gold,.8));gr.addColorStop(1,rgba(gold,0));
-     g.fillStyle=gr;g.beginPath();g.moveTo(S.bx,S.by-30);g.lineTo(S.bx+L,S.by-120);g.lineTo(S.bx+L,S.by+120);g.lineTo(S.bx,S.by+30);g.fill();g.globalAlpha=1;}},
-  // 12 — from above: the stolen dawn leaves her
-  {d:2.7,fout:.35,foutCol:'#fff4d8',draw(X,G,u,t){const P=pcam({x:0,y:-1250-u*120,z:1100,pitch:PI/2,yaw:-.25,f:V.H*1.2});
-     templeSet(X,G,P,{fire:0,sky:DAWN,stone:'#3a3028',line:'#4a3e32',floorLight:(c,g,P)=>pglow(c,P,60,1150,520,gold,.3+u*.3),figs:[{x:60,z:1150,d:()=>topFig(X,P,60,1150,'lie',1,-80,1400)}]});
-     const q=P(60,-30-E.i2(u)*1150,1130);if(q){const r=Math.min(V.W,q[2]*40);G.save();G.globalCompositeOperation='lighter';G.drawImage(glowSprite(gold),q[0]-r*3,q[1]-r*3,r*6,r*6);G.drawImage(glowSprite(gold,1),q[0]-r,q[1]-r,r*2,r*2);G.restore();}},
+  // 9 — present, from above: the same ring as that night, kneeling around her now
+  {d:2.8,draw(X,G,u){const P=pcam({x:0,y:-1520+u*140,z:1100,pitch:PI/2,yaw:.15+u*.3,f:V.H*1.25});
+     templeSet(X,G,P,{fire:0,noBrz:1,sky:DAWN,stone:'#3a3028',line:'#4a3e32',floorLight:(c,g,P)=>pglow(c,P,0,1100,620,gold,.2+u*.25),
+       figs:[{x:0,z:1100,d:()=>{topFig(X,P,0,1100,'stand',1.15,0,640);const q=P(0,-40,1100);if(q)glowAt(G,q[0],q[1],q[2]*70,vio,.5);}},{x:0,z:640,d:()=>topFig(X,P,0,640,'stand',1.1,0,1100)},
+         ...S0.ring.map((m,i)=>({x:m.x,z:m.z,d:()=>ghostTop(X,G,P,m.x,m.z,'kneel',clamp(u*2.4-i/31*1.3,0,1),0,1100)}))]});},
+   sub:['sol','No. I kept all of them.'],subAt:.8,ev:[[.1,()=>SFX.choir([146.8,185,220,293.7],9,.05)]]},
+  // 10 — behind her: they stand, and he walks in through them
+  {d:2.8,draw(X,G,u,t){const P=pcam({x:95,y:-175,z:1270,yaw:PI,pitch:.05,f:V.H*1.0}),sz=lerp(1100-470,1100-160,E.o(u));
+     const figs=S0.ring.filter(m=>m.z<1150).map((m,i)=>({x:m.x,z:m.z,d:()=>{const up=seg01(u,.08+hash(i*3.7)*.3,.3+hash(i*3.7)*.3);ghostFig(X,G,P,MONK,m.x,m.z,{pose:up>.5?'palms':'kneel',a:.35+up*.5});}}));
+     figs.push({x:0,z:1100,d:()=>pfig(X,G,P,D.ch,0,1100,{back:true,pose:'stand',rim:mixC(vio,'#ffffff',.25),rimDx:1.2})});
+     figs.push({x:0,z:sz,d:()=>pfig(X,G,P,A.ch,0,sz,{pose:'loose',hot:.9,y:-Math.abs(Math.sin(t*5.2))*4*(1-u),rim:'#ffcf70',rimDx:-1.3})});
+     templeSet(X,G,P,{fire:0,noBrz:1,sky:DAWN,occlude:1,figs,floorLight:(c,g,P)=>pglow(c,P,0,1000,560,gold,.3)});}},
+  // 11 — close: his open hand, where hers closed; every one of them strikes with it
+  {d:2.4,speed:[[0,1],[1.12,1],[1.2,.25,'o'],[1.4,.25],[1.52,1,'i'],[2.4,1]],flat:[[1.2,1.235,'w'],[1.235,1.27,'a'],[1.27,1.3,'b']],impCol:gold,flatThr:30,
+   draw(X,G,u,t){const W=V.W,H=V.H,tx=W*.4,ty=H*.7,hit=t>=1.2;
+     vsky(X,[[0,'#241510'],[.6,'#5a3424'],[1,'#8a5236']],0,H);const wl=X.createRadialGradient(W*.8,H*.4,0,W*.8,H*.4,H);wl.addColorStop(0,'rgba(255,205,130,.55)');wl.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=wl;X.fillRect(0,0,W,H);
+     drawBust(X,G,D.ch,W*.27,1,{zoom:1.85,hy:.26,rim:'#ffcf70',rimDx:1.8,hot:.15});
+     const fl=hit?seg01(t,1.2,1.9):0,fc=mixC(vio,gold,fl);glowAt(G,tx-H*.06,ty,H*(.1+.04*Math.sin(t*7)+fl*.25),fc,.8);coreAt(G,tx-H*.06,ty,H*(.025+fl*.05),fc,.9);
+     const k=E.o(seg01(t,.25,1.2));
+     for(let i=0;i<31;i++){const a=-PI*.42+i/30*PI*.84,R=W*.75*(1-E.o(seg01(t,.05+hash(i)*.35,1.2))),hx2=tx+Math.cos(a)*R,hy2=ty+Math.sin(a)*R*.7;
+       if(R<2)continue;X.save();X.globalCompositeOperation='lighter';X.globalAlpha=.22;palmHand(X,hx2+H*.02,hy2,H/210,-PI/2+a*.35,0,'#8a6020');X.restore();glowAt(G,hx2-H*.05,hy2,H*.03,gold,.35);}
+     const hx=lerp(W*1.12,tx+H*.02,k),sl=c=>{c.save();c.translate(hx,ty);c.rotate(-PI/2);c.scale(H/180,H/180);c.fillStyle=INK;c.beginPath();c.moveTo(-16,70);c.lineTo(16,70);c.lineTo(52,260);c.lineTo(-52,260);c.closePath();c.fill();c.restore();palmHand(c,hx,ty,H/180,-PI/2,0);};
+     sl(X);G.save();G.globalCompositeOperation='destination-out';sl(G);G.restore();
+     G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.8;G.strokeStyle='#ffd890';G.lineWidth=1.5;G.beginPath();G.moveTo(hx-H*.02,ty-H*.105);G.lineTo(hx+H*.39,ty-H*.105);G.lineTo(hx+H*1.45,ty-H*.3);G.stroke();G.restore();
+     if(hit&&t<1.9&&rnd()<.9)pt({x:tx-H*.06+rnd(30,-30),y:ty+rnd(30,-30),vx:rnd(300,-300),vy:rnd(200,-300),l:rnd(.6,.2),s:rnd(3,1.5),c:gold,t:'spark',g:0,dr:.6});},
+   ev:[[.2,()=>SFX.dash()],[1.2,()=>{SFX.impact();SFX.bell();shake(22);}]]},
+  // 12 — from above: thirty-one palms at once
+  {d:1.8,flat:[[.2,.24,'w'],[.24,.28,'b']],impCol:gold,flatThr:20,draw(X,G,u,t){const P=pcam({x:0,y:-1350,z:1100,pitch:PI/2,yaw:.5,f:V.H*1.2}),c=P(0,0,1100);
+     templeSet(X,G,P,{fire:0,noBrz:1,sky:DAWN,stone:'#3a3028',line:'#4a3e32',floorLight:(cc,g,P)=>pglow(cc,P,0,1100,700,gold,.35),
+       figs:[{x:0,z:1100,d:()=>topFig(X,P,0,1100,'stand',1.15,0,900)},{x:0,z:1020,d:()=>topFig(X,P,0,1020,'stand',1.1,0,1100)},
+         ...S0.ring.map(m=>({x:m.x,z:m.z,d:()=>ghostTop(X,G,P,m.x,m.z,'stand',1,0,1100)}))]});
+     if(!c)return;for(const m of S0.ring){const q=P(m.x,-30,m.z);if(!q)continue;const k=E.o(seg01(t,0,.2));G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.8*(1-seg01(t,.3,1));G.strokeStyle=gold;G.lineWidth=2.5;
+       G.beginPath();G.moveTo(q[0],q[1]);G.lineTo(lerp(q[0],c[0],k),lerp(q[1],c[1],k));G.stroke();G.restore();}
+     for(let i=0;i<3;i++){const r=seg01(t,.22+i*.12,1.2+i*.2);if(r>0&&r<1){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=(1-r)*.8;G.strokeStyle=i?gold:'#ffffff';G.lineWidth=(1-r)*14+2;G.beginPath();G.arc(c[0],c[1],r*V.H*.9,0,TAU);G.stroke();G.restore();}}},
+   ev:[[.2,()=>{SFX.boom(1.2);shake(18);}]]},
+  // 13 — low, against the dawn: the flame she stole is torn out of her, and it remembers its colour
+  {d:2.4,draw(X,G,u,t){const W=V.W,H=V.H;vsky(X,DAWN.map(s=>[s[0]*.9,s[1]]),0,H*.95);X.fillStyle='#0a0608';X.fillRect(0,H*.9,W,H);
+     const arch=E.o(seg01(u,0,.3));const r=sil(X,G,D.ch,W*.4,H*1.02,H/250,{pose:'loose',over:{L:[.55,.15],R:[.5,.2]},tilt:-.16*arch,headTilt:-.5*arch,hot:.2,rim:'#ffcf70',rimDx:-1.4});
+     const c=[r.chest[0],r.chest[1]],pr=E.o(seg01(u,.08,.7));ribbon(G,c,[c[0]+W*.05,c[1]-H*.55],[W*.86,H*.14],H*.035,H*.06,vio,gold,1,pr);
+     coreAt(G,c[0],c[1],H*.04*(1-u*.6),mixC(vio,gold,u),.9);
+     if(rnd()<.8)pt({x:c[0]+rnd(20,-20),y:c[1],vx:rnd(60,-160),vy:-rnd(420,180),l:rnd(1,.4),s:rnd(3,1.5),c:mixC(vio,gold,rnd()),t:'ember',g:-40});},
+   ev:[[.05,()=>SFX.sizzle()],[.5,()=>SFX.rise(1.4)]]},
+  // 14 — from above: the stolen dawn leaves her, and they go with it
+  {d:2.4,fout:.35,foutCol:'#fff4d8',draw(X,G,u,t){const P=pcam({x:0,y:-1250-u*120,z:1100,pitch:PI/2,yaw:-.25,f:V.H*1.2});
+     templeSet(X,G,P,{fire:0,noBrz:1,sky:DAWN,stone:'#3a3028',line:'#4a3e32',floorLight:(c,g,P)=>pglow(c,P,60,1150,520,gold,.3+u*.3),
+       figs:[{x:60,z:1150,d:()=>topFig(X,P,60,1150,'lie',1,-80,1400)},...S0.ring.map((m,i)=>({x:m.x,z:m.z,d:()=>{const a=1-seg01(u,.1+hash(i)*.4,.5+hash(i)*.4);ghostTop(X,G,P,m.x,m.z,'stand',a,0,1100);
+         const q=P(m.x,-40,m.z);if(q&&a>0&&a<1&&rnd()<.3)pt({x:q[0],y:q[1],vx:rnd(30,-30),vy:rnd(30,-30),l:1,s:rnd(4,2),c:gold,t:'ember',g:0});}}))]});
+     const q=P(60,-30-E.i2(u)*1150,1130);if(q){const r=Math.min(V.W,q[2]*40);coreAt(G,q[0],q[1],r,gold,1);}},
    ev:[[.3,()=>SFX.bell()]]},
-  // 13 — the first sunrise in nine years
-  {d:3.4,fout:1.0,draw(X,G,u,t){sunriseDraw(X,G,u,t,A.ch,{pagoda:1,ember:gold});},
-   sub:['sol','Rest now, brothers. The dawn is home.'],subAt:.6,ev:[[.1,()=>SFX.pad([146.8,185,220,293.7],6,.05)]]},
-  // 14 — title
+  // 15 — the first sunrise in nine years
+  {d:3.2,fout:1.0,draw(X,G,u,t){sunriseDraw(X,G,u,t,A.ch,{pagoda:1,ember:gold});},
+   sub:['sol','Rest now, brothers. The dawn is home.'],subAt:.5,ev:[[.1,()=>SFX.pad([146.8,185,220,293.7],6,.05)]]},
+  // 16 — title
   {d:1.7,fin:.3,fout:.5,draw(X){X.fillStyle='#000';X.fillRect(0,0,V.W,V.H);},
    card(u,t){const a=clamp(t*3,0,1)*clamp((1.7-t)/.5,0,1);txt('THE LAST DAWN',V.W/2,V.H/2,34,{w:200,al:'center',track:2,c:'#f2e6c8',a});txt('SOL  ·  MORROW',V.W/2,V.H/2+28*US(),9,{w:600,al:'center',track:2,c:'#b08a4a',a});}},
  ]};};
@@ -3512,7 +3535,7 @@ const STORY_OF={
     win:[['ashen','You fight like a man with nothing to lose. Find something.']]},
    {op:'rin',stage:'blossom',title:'PETAL HILL',pre:[['rin','You came up the Gate road. I can smell it on you.'],['ashen','I walked out of it.'],['rin','Out? Nobody walks out. My sister is still in there.','e'],['ashen','Then do not go looking for the way.'],['rin','You are going to show me. Even if I have to beat it out of you.']],
     win:[['ashen','Go home, lancer. The Gate does not give back what it takes.']]},
-   {op:'vex',stage:'dusk',title:'THE GATES OF ASHFIELD',pre:[['vex','You should not be standing.'],['ashen','You should not have opened the gates.','e'],['vex','It was a contract. A key, a door, a purse of silver.'],['ashen','Forty thousand people.','w'],['vex','...I did not know about the fire.'],['ashen','Neither did they.','e']],
+   {op:'vex',stage:'dusk',title:'THE GATES OF ASHFIELD',hint:'FINAL ROUND: FINISH HER WITH CRIMSON REQUIEM',pre:[['vex','You should not be standing.'],['ashen','You should not have opened the gates.','e'],['vex','It was a contract. A key, a door, a purse of silver.'],['ashen','Forty thousand people.','w'],['vex','...I did not know about the fire.'],['ashen','Neither did they.','e']],
     win:[['vex','Finish it, then.'],['ashen','No. You will carry it, the way I have.']]},
    {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','You were weighed once, general. You left before the scales settled.','l'],['ashen','I had unfinished business.'],['grim','And now?'],['ashen','Now it is finished. Open the Gate.'],['grim','Not for you. Never again for you.','e']],
     win:[['grim','Go, then. See what waits for a man who has already died.']]},
@@ -3535,8 +3558,8 @@ const STORY_OF={
    {op:'rin',stage:'blossom',title:'PETAL HILL',pre:[['rin','You are standing on my blossoms.'],['goliath','Out of the way.'],['rin','Say please.','e'],['goliath','No.','l']],
     win:[['goliath','Your blossoms will grow back.']]},
    {op:'vex',stage:'bamboo',title:'THE SILENT GROVE',pre:[['goliath','I can hear you breathing.'],['vex','Most people cannot.'],['goliath','I was made to hear a storm through a mountain.','l'],['vex','Then listen closely.','e']],
-    win:[['vex','Your storm-thief went up. To Zenith.'],['goliath','Thank you.']]},
-   {op:'bolt',stage:'storm',title:'THE STOLEN STORM',pre:[['bolt','Big guy! They sent you all the way up here?'],['goliath','Give it back.'],['bolt','It is not a thing, it is me now. You would have to tear it out.','e'],['goliath','The forge is dying. The smiths are dying.','w'],['bolt','...Then come and take it.','l']],
+    win:[['vex','Your storm-thief is not hiding. He went back to your forge.'],['goliath','Thank you.']]},
+   {op:'bolt',stage:'forge',title:'THE STOLEN STORM',hint:'FINAL ROUND: FINISH HIM WITH FORGEFALL',pre:[['bolt','Figured you would find me here eventually.'],['goliath','Give it back.'],['bolt','It is not a thing, it is me now. You would have to tear it out.','e'],['goliath','The forge is dying. The smiths are dying.','w'],['bolt','...Then come and take it.','l']],
     win:[['bolt','Go on, then. Tear it out.'],['goliath','No. Walk it home. It will listen to you.']]},
    {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','A thing of slag and orders. What does a hammer want with the sun?'],['goliath','Smiths cannot work in the dark.'],['grim','Is that all?'],['goliath','It is enough.','l']],
     win:[['grim','Go through, forgeborn.']]},
@@ -3548,7 +3571,7 @@ const STORY_OF={
     win:[['sol','You are strong. You are not yet anything else.']]},
    {op:'goliath',stage:'forge',title:'THE CRUCIBLE',pre:[['goliath','Monk. Have you seen a thief with a storm in his chest?'],['sol','I am looking for a thief of my own.'],['goliath','Then we are both looking. Only one of us goes on.','l']],
     win:[['goliath','The witch went back to your temple. The marsh lights followed her.']]},
-   {op:'morrow',stage:'monastery',title:'THE LAST DAWN',hint:'FINISH HER WITH HUNDRED SUNS',pre:[['morrow','You came home. How sentimental.'],['sol','You have something that belongs to my brothers.'],['morrow','Your brothers knelt around a fire and prayed for the sun. For nine years.','l'],['morrow','Light is wasted on the faithful.','e'],['sol','Then let me waste it on you.']],
+   {op:'morrow',stage:'monastery',title:'THE LAST DAWN',hint:'FINAL ROUND: FINISH HER WITH HUNDRED SUNS',pre:[['morrow','You came home. How sentimental.'],['sol','You have something that belongs to my brothers.'],['morrow','Your brothers knelt around a fire and prayed for the sun. For nine years.','l'],['morrow','Light is wasted on the faithful.','e'],['sol','Then let me waste it on you.']],
     win:[['morrow','Take it, then. Take your little flame.'],['sol','It was never little.']]},
    {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','You carry thirty-two embers, monk.'],['sol','Thirty-one. The last is mine, and I am keeping it.'],['grim','Then you will be weighed with it.','e']],
     win:[['grim','The dawn is yours to carry, last monk.']]},
@@ -3574,7 +3597,7 @@ const STORY_OF={
     win:[['grim','Sturdy. You will be weighed another day.']]},
    {op:'bolt',stage:'storm',title:'ZENITH',pre:[['bolt','Whoa. You are the Gate guy. Are you here for me?'],['grim','Not yet.','e'],['bolt','Then what, you want a fight?','l'],['grim','I want a road. You are standing on it.']],
     win:[['bolt','Hey. Not yet, right? You said not yet.'],['grim','Not yet.']]},
-   {op:'ashen',stage:'dusk',title:'THE ONE WHO RETURNED',pre:[['ashen','Keeper. I wondered when you would come.'],['grim','You were weighed. You left before the scales settled.','w'],['ashen','I had a debt to collect.'],['grim','So have I.','e']],
+   {op:'ashen',stage:'dusk',title:'THE ONE WHO RETURNED',hint:'FINAL ROUND: FINISH HIM WITH THE LAST GATE',pre:[['ashen','Keeper. I wondered when you would come.'],['grim','You were weighed. You left before the scales settled.','w'],['ashen','I had a debt to collect.'],['grim','So have I.','e']],
     win:[['grim','Come, general. The scales are waiting.']]},
   ],
   end:[['narr','He brought the general back, and closed the Gate behind them both.','dark'],['grim','Every door closes eventually.','e'],['narr','No one ever came back out again.','dark']]},
@@ -3598,7 +3621,7 @@ const STORY_OF={
     win:[['morrow','Go on to the Gate, little one. Tell it I am coming.']]},
    {op:'ashen',stage:'dusk',title:'ASHFIELD',pre:[['rin','You. You are the one who came back out.'],['ashen','I am.'],['rin','Then you saw her. Hana. A spear, a blossom ember, stubborn.','e'],['ashen','...I saw her.'],['rin','Then you are going to tell me everything.','l']],
     win:[['ashen','She was not afraid. She told me to go home.'],['rin','...That sounds like her.']]},
-   {op:'grim',stage:'grave',title:'HANA',pre:[['grim','Petal lancer. I told your sister the Gate does not give back.'],['rin','And I am telling you I am not asking.','e'],['grim','Then you will be weighed.','w'],['rin','Weigh this.','l']],
+   {op:'grim',stage:'grave',title:'HANA',hint:'FINAL ROUND: FINISH HIM WITH THOUSAND PETALS',pre:[['grim','Petal lancer. I told your sister the Gate does not give back.'],['rin','And I am telling you I am not asking.','e'],['grim','Then you will be weighed.','w'],['rin','Weigh this.','l']],
     win:[['grim','...Go in. Find her. The Gate will let you out. Once.']]},
   ],
   end:[['narr','She went through the Last Gate carrying nothing at all.','gate'],['narr','She came back out with her sister.','sun'],['rin','Come on, Hana. The blossoms are waiting.','sun']]},
@@ -3635,7 +3658,7 @@ function stageBack(X,G,sid,o){o=o||{};const st=STAGES[sid]||STAGES.dusk;
 /* chest-up, head at o.hy of the frame, sized the same for every fighter */
 function drawBust(X,G,ch,x,look,o){o=o||{};const H=V.H,z=o.zoom||1,sc=H/(118*ch.h)*z;
   X.save();G.save();X.translate(x,H*(o.hy||.36)+172/118*H*z);X.scale(sc,sc);G.setTransform(X.getTransform());
-  const f={pose:o.pose||'stand',look,hot:o.hot||.3,back:!!o.back,noGlow:o.back?1:0,still:o.still};
+  const f=Object.assign({pose:o.pose||'stand',look,hot:o.hot||.3,back:!!o.back,noGlow:o.back?1:0,still:o.still},o.fig||{});
   if(!o.back){X.save();G.save();G.globalCompositeOperation='destination-out';figFront(G,null,ch,Object.assign({},f,{noGlow:1}));G.restore();X.restore();}
   if(o.rim)rimFront(X,G,ch,f,o.rim,o.rimDx||-look*1.6);else figFront(X,G,ch,f);X.restore();G.restore();}
 
@@ -3677,7 +3700,7 @@ const NARR={
    shadowHand(X,hx,hy,s,1,false);G.save();G.globalCompositeOperation='destination-out';shadowHand(G,hx,hy,s,1,false);G.restore();
    const ey=hy-s*95+Math.sin(t*2)*s*3,er=H*(.04+.005*Math.sin(t*5));G.save();G.globalCompositeOperation='lighter';G.drawImage(glowSprite(col),hx-er*3,ey-er*3,er*6,er*6);G.drawImage(glowSprite(col,1),hx-er*.8,ey-er*.8,er*1.6,er*1.6);G.restore();},
  // the road of graves, and the Gate at the end of it
- gate(X,G,u,t,o){const W=V.W,H=V.H,open=o.open?o.open(u):0,P=pcam({x:0,y:-85,z:-300+u*170,pitch:-.05,f:H*1.15}),GZ=2600,lite='#d8ffe4';
+ gate(X,G,u,t,o){const W=V.W,H=V.H,open=o.open?o.open(u):0,P=pcam(o.cam?o.cam(u):{x:0,y:-85,z:-300+u*170,pitch:-.05,f:H*1.15}),GZ=2600,lite=o.lite||'#d8ffe4';
    psky(X,P,[[0,'#020403'],[.55,'#0a1410'],[1,'#26402e']],'#040605');
    const c0=P(0,-440,GZ);if(c0){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=Math.min(1,.45+open*.7);const r=c0[2]*(650+open*1500);G.drawImage(glowSprite('#9be88a'),c0[0]-r,c0[1]-r*.8,r*2,r*1.6);G.restore();}
    pfill(X,P,[[-1600,0,-200],[1600,0,-200],[1600,0,GZ+200],[-1600,0,GZ+200]],'#070a08');pfill(X,P,[[-150,0,-200],[150,0,-200],[150,0,GZ],[-150,0,GZ]],'#121a15');
@@ -3689,7 +3712,8 @@ const NARR={
      const a=P(0,-880,GZ),b=P(0,0,GZ);if(a&&b){G.globalAlpha=.9;G.strokeStyle=lite;G.lineWidth=Math.max(1.2,a[2]*6);G.beginPath();G.moveTo(a[0],a[1]);G.lineTo(b[0],b[1]);G.stroke();}G.restore();}});
    for(let i=0;i<12;i++)for(const s of[-1,1]){const z=150+i*205,x=s*(250+hash(i*3+s)*300),h=70+hash(i*5+s)*90,w=24+hash(i*7+s)*16,cr=hash(i*9+s)>.62;
      items.push({x,z,d:()=>{pbox(X,P,x-w,x+w,-h,0,z-8,z+8,INK);if(cr)pbox(X,P,x-w*1.9,x+w*1.9,-h*.78,-h*.64,z-6,z+6,INK);}});}
-   (o.walkers||[]).forEach((c,j)=>{const z=o.wz(u)+j*30,x=(j-((o.walkers.length-1)/2))*110;items.push({x,z,d:()=>pfig(X,G,P,c,x,z,{back:true,pose:'loose',t:t+j})});});
+   (o.walkers||[]).forEach((c,j)=>{const z=o.wz(u)+j*30,x=(j-((o.walkers.length-1)/2))*110+(o.wx||0);items.push({x,z,d:()=>{const f=pfig(X,G,P,c,x,z,{back:!o.facing,pose:o.wpose||'loose',t:t+j,y:o.bob?-Math.abs(Math.sin(t*5.5+j))*5:0});if(f&&o.carry)o.carry(G,f,c);}});});
+   if(o.figs)items.push(...o.figs(P));
    for(const it of items){const q=P(it.x||0,0,it.z);it.dd=q?q[3]:it.z;}items.sort((a,b)=>b.dd-a.dd);
    PCUT=G;try{for(const it of items)it.d();}finally{PCUT=null;}
    G.save();G.globalCompositeOperation='lighter';for(let i=0;i<14;i++){const x=W*hash(i*2.7)+Math.sin(t*.4+i)*30,y=H*(.45+hash(i*5.1)*.35)-((t*12+i*40)%(H*.3)),r=H*.012;G.globalAlpha=.45;G.drawImage(glowSprite('#9cff7a',1),x-r,y-r,r*2,r*2);}G.restore();},
@@ -3822,6 +3846,475 @@ function drawStoryPath(ch,x,y){const S=US(),s=STORY_OF[ch.id];txt('THE ROAD',x,y
   s.ch.forEach((c,i)=>{const o=chOf(c.op),yy=y+24*S+i*30*S,rv=rivalryOf(ch.id,o.id);txt(String(i+1),x,yy,9,{w:700,c:'#555'});txt(c.title,x+20*S,yy,11,{w:500,track:1,c:'#ddd'});
     txt(o.name+'   ·   '+STAGES[c.stage].name+(rv?'   ·   RIVAL':''),x+20*S,yy+13*S,7.5,{w:600,track:2,c:rv?o.col:'#777'});});
   if(_ls('umbra.story').includes(ch.id))txt('COMPLETE',x,y+24*S+4*30*S,8,{w:700,track:2,c:ch.col});}
+
+/* =======================================================================
+   RIVAL FINISHERS — every rivalry is settled by an attack of its own,
+   built out of its story: flashback first, then the strike, from any
+   angle the moment needs. Nothing here is a fighter's normal ultimate.
+   ======================================================================= */
+SPEAKERS.hana={name:'HANA',col:'#ffe4ec'};
+const SOLDIER=Object.assign({},ROSTER.find(c=>c.id==='ashen'),{id:'soldier',col:'#ff5a2a',coat:0,eyes:'calm'});delete SOLDIER._poses;
+const SMITH=Object.assign({},ROSTER.find(c=>c.id==='bolt'),{id:'smith',col:'#ffa040',wep:'none',hair:'ponytail'});delete SMITH._poses;
+const EMBER='#ff7a2a';
+
+/* ---------------- drawing kit ---------------- */
+/* impact frames for drawn shots: threshold the finished frame to two tones */
+function twoTone(bg,ink,thr){const W=cv.width,H=cv.height,im=X.getImageData(0,0,W,H),d=im.data,b=hx(bg),k=hx(ink);
+  for(let i=0;i<d.length;i+=4){const o=d[i]*.3+d[i+1]*.59+d[i+2]*.11<thr?k:b;d[i]=o[0];d[i+1]=o[1];d[i+2]=o[2];d[i+3]=255;}X.putImageData(im,0,0);}
+function glowAt(g,x,y,r,col,a){g.save();g.globalCompositeOperation='lighter';g.globalAlpha=a===undefined?1:a;g.drawImage(glowSprite(col),x-r,y-r,r*2,r*2);g.restore();}
+function coreAt(g,x,y,r,col,a){g.save();g.globalCompositeOperation='lighter';g.globalAlpha=a===undefined?1:a;g.drawImage(glowSprite(col),x-r*3,y-r*3,r*6,r*6);g.drawImage(glowSprite(col,1),x-r,y-r,r*2,r*2);g.restore();}
+function vsky(c,stops,y0,y1){const g=c.createLinearGradient(0,y0,0,y1);stops.forEach(s=>g.addColorStop(s[0],s[1]));c.fillStyle=g;c.fillRect(-4,-4,V.W+8,V.H+8);}
+/* a front figure placed in screen space; sc = pixels per unit of a normal-height fighter. Returns screen points. */
+function sil(X,G,ch,x,y,sc,o){o=o||{};const s=sc/ch.h*(o.raw?ch.h:1);X.save();G.save();X.translate(x,y);if(o.rot)X.rotate(o.rot);X.scale(s,s);G.setTransform(X.getTransform());
+  if(o.alpha!==undefined){X.globalAlpha=o.alpha;G.globalAlpha=o.alpha;}
+  if(!o.noCut){G.save();G.globalCompositeOperation='destination-out';figFront(G,null,ch,Object.assign({},o,{noGlow:1}));G.restore();}
+  const r=o.rim?rimFront(X,G,ch,o,o.rim,o.rimDx||1.4):figFront(X,G,ch,o);X.restore();G.restore();
+  const m=p=>{const q=o.rot?rot2(p[0],p[1],o.rot):p;return[x+q[0]*s,y+q[1]*s];};return{head:m(r.head),hands:r.hands.map(m),chest:m(r.chest),s};}
+/* a human hand, fingers along local -y, forearm along +y; curl 0 open .. 1 fist */
+function palmHand(c,x,y,s,ang,curl,col){curl=curl||0;c.save();c.translate(x,y);c.rotate(ang||0);c.scale(s,s);c.fillStyle=col||INK;c.strokeStyle=col||INK;c.lineCap='round';c.lineJoin='round';
+  c.beginPath();c.moveTo(-11,18);c.lineTo(-14,170);c.lineTo(14,170);c.lineTo(11,18);c.fill();
+  c.beginPath();c.moveTo(-16,24);c.quadraticCurveTo(-19,-2,-15,-22);c.lineTo(15,-24);c.quadraticCurveTo(19,-2,15,24);c.closePath();c.fill();
+  for(const[fx,L,w] of[[-11,25,3.5],[-3.7,30,3.8],[3.8,28,3.7],[11,22,3.2]]){const l=L*(1-curl*.62);c.lineWidth=w*2;c.beginPath();c.moveTo(fx,-20);c.lineTo(fx*1.12,-20-l);c.stroke();}
+  c.lineWidth=8.5;c.beginPath();c.moveTo(-14,8);c.quadraticCurveTo(-29,-2,-31+curl*16,-19+curl*12);c.stroke();c.restore();}
+/* a glowing ribbon of light along a quadratic curve, colour running c0 -> c1 */
+function ribbon(g,p0,p1,p2,w0,w1,c0,c1,a,prog){prog=prog===undefined?1:prog;g.save();g.globalCompositeOperation='lighter';const n=40;
+  for(let i=0;i<=n*prog;i++){const u=i/n,x=(1-u)*(1-u)*p0[0]+2*(1-u)*u*p1[0]+u*u*p2[0],y=(1-u)*(1-u)*p0[1]+2*(1-u)*u*p1[1]+u*u*p2[1],w=lerp(w0,w1,u),col=mixC(c0,c1,u);
+    g.globalAlpha=a*(.35+.4*Math.sin(u*PI));g.drawImage(glowSprite(col),x-w*1.6,y-w*1.6,w*3.2,w*3.2);}g.restore();}
+/* a translucent golden figure: the dead, standing with the living */
+function ghostFig(X,G,P,ch,x,z,o){o=o||{};const a=o.a===undefined?1:o.a;if(a<=0)return;X.save();X.globalCompositeOperation='lighter';
+  pfig(X,G,P,ch,x,z,Object.assign({ink:o.inkG||'#8a6020',alpha:a*.62,noGlow:1,still:1,ghost:1},o));X.restore();
+  const q=P(x,-160*ch.h,z);if(q)glowAt(G,q[0],q[1],q[2]*30,o.gcol||'#ffc23a',a*.5);}
+function ghostTop(X,G,P,x,z,kind,a,fx,fz,s){if(a<=0)return;X.save();X.globalCompositeOperation='lighter';X.globalAlpha=a*.85;topFig(X,P,x,z,kind,s||1,fx,fz,'#7a5418');X.restore();
+  const q=P(x,-40,z);if(q)glowAt(G,q[0],q[1],q[2]*55,'#ffc23a',a*.5);}
+/* screen-space lightning between two points */
+function zap(g,x1,y1,x2,y2,col,w,seed){const n=10,pts=[[x1,y1]];for(let i=1;i<n;i++){const u=i/n,j=(hash(seed+i*7.3)-.5)*Math.hypot(x2-x1,y2-y1)*.18;pts.push([lerp(x1,x2,u)+j*(y2-y1)/Math.hypot(x2-x1,y2-y1||1),lerp(y1,y2,u)-j*(x2-x1)/Math.hypot(x2-x1,y2-y1||1)]);}pts.push([x2,y2]);
+  g.save();g.globalCompositeOperation='lighter';g.lineJoin='round';for(const[lw,c,a]of[[w*5,col,.35],[w*1.8,mixC(col,'#ffffff',.5),.9],[w*.7,'#ffffff',1]]){g.globalAlpha=a;g.strokeStyle=c;g.lineWidth=lw;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();}g.restore();}
+/* a box with explicit extents in any order */
+const pbx=(c,P,a,b,y0,y1,z0,z1,col)=>pbox(c,P,Math.min(a,b),Math.max(a,b),Math.min(y0,y1),Math.max(y0,y1),Math.min(z0,z1),Math.max(z0,z1),col||INK);
+function pquad(c,P,pts,col){pfill(c,P,pts,col||INK);if(PCUT)cutOut(k=>{if(ppath(k,P,pts)){k.fillStyle='#000';k.fill();}});}
+function sortDraw(P,items){for(const it of items){const q=P(it.x||0,it.y||0,it.z);it.dd=q?q[3]:-1e9;}items.sort((a,b)=>b.dd-a.dd);for(const it of items)it.d();}
+function card2(title,sub,col){return{d:1.8,fin:.3,fout:.5,draw(X){X.fillStyle='#000';X.fillRect(0,0,V.W,V.H);},
+  card(u,t){const a=clamp(t*3,0,1)*clamp((1.8-t)/.5,0,1);txt(title,V.W/2,V.H/2,34,{w:200,al:'center',track:2,c:'#f2e6c8',a});txt(sub,V.W/2,V.H/2+28*US(),9,{w:600,al:'center',track:2,c:col,a});}};}
+function pastify(sh){sh.grade='past';return sh;}
+/* a figure seen from above that also blocks the light under it */
+function topC(X,G,P,x,z,kind,s,fx,fz){topFig(X,P,x,z,kind,s,fx,fz);G.save();G.globalCompositeOperation='destination-out';topFig(G,P,x,z,kind,s,fx,fz,'#000');G.restore();}
+
+/* =======================================================================
+   THE GATES OF ASHFIELD — Ashen finishes Vex at Ashfield.
+   She opened the city's gates for silver on the first night of the Dusk.
+   He died holding them. He draws the walls again, in fire, around her,
+   and this time the gates close with both of them inside.
+   ======================================================================= */
+const ASH_SKY=[[0,'#0a0305'],[.5,'#3a0e08'],[.85,'#a0381a'],[1,'#e0703a']];
+/* Ashfield's gate and walls; leaves swing in toward the city as `open` rises */
+function ashGate(X,G,P,o){o=o||{};const gz=o.gz||1600,open=o.open||0,H0=380;
+  psky(X,P,o.sky||ASH_SKY,'#120806');if(o.beyond)o.beyond(X,G,P);
+  pfill(X,P,[[-3000,0,gz-2600],[3000,0,gz-2600],[3000,0,gz+3000],[-3000,0,gz+3000]],'#1a0e0a');if(o.floor)o.floor(X,G,P);
+  const items=[{x:0,z:gz,d:()=>{
+    for(const s of[-1,1]){pbx(X,P,s*360,s*2600,-460,0,gz-30,gz+30);pbx(X,P,s*200,s*380,-640,0,gz-60,gz+60);
+      for(let i=0;i<3;i++)pbx(X,P,s*(205+i*62),s*(235+i*62),-676,-640,gz-60,gz+60);for(let x=420;x<2600;x+=90)pbx(X,P,s*x,s*(x+45),-490,-460,gz-30,gz+30);}
+    pbx(X,P,-200,200,-470,-H0,gz-50,gz+50);
+    const a=open*1.35;for(const s of[-1,1]){const hx0=s*200,ex=hx0-s*200*Math.cos(a),ez=gz-200*Math.sin(a);pquad(X,P,[[hx0,0,gz],[ex,0,ez],[ex,-H0,ez],[hx0,-H0,gz]]);}}}];
+  if(o.figs)items.push(...o.figs);const pc=PCUT;PCUT=G;try{sortDraw(P,items);}finally{PCUT=pc;}
+  if(o.fireTop)for(let x=-2400;x<=2400;x+=260){if(Math.abs(x)<420)continue;const q=P(x,-470,gz);if(q)flame(X,G,q[0],q[1],q[2]*42,EMBER,gameT+x,o.fireTop*(.6+hash(x)*.4));}}
+/* the horde beyond the gate: fire, and a sea of eyes */
+function ashBeyond(gz,a){return(X,G,P)=>{const q=P(0,-240,gz+900);if(q)glowAt(G,q[0],q[1],q[2]*1500,EMBER,.9*a);
+  for(let i=0;i<14;i++){const p=P((hash(i*3.1)-.5)*1600,0,gz+300+hash(i*1.7)*1400);if(p)flame(X,G,p[0],p[1],p[2]*(60+hash(i)*60),EMBER,gameT+i,a);}
+  G.save();G.globalCompositeOperation='lighter';for(let i=0;i<120;i++){const x=(hash(i*5.3)-.5)*1400,z=gz+150+hash(i*2.9)*1600,p=P(x,-150-hash(i)*40,z);if(!p)continue;const r=Math.max(1,p[2]*5);
+    G.globalAlpha=a*(.5+.5*Math.sin(gameT*3+i));G.fillStyle='#ff4030';G.fillRect(p[0]-r*2.2,p[1],r*1.6,r*.8);G.fillRect(p[0]+r*.6,p[1],r*1.6,r*.8);}G.restore();};}
+/* the walls Ashen draws: a square of fire, the gate in its north side */
+const SQ=600;
+function wallSides(){return[[-SQ,-SQ,-SQ,SQ,-1,0],[SQ,-SQ,SQ,SQ,1,0],[-SQ,-SQ,SQ,-SQ,0,-1],[-SQ,SQ,-200,SQ,0,1],[200,SQ,SQ,SQ,0,1]];}
+function fireLines(G,P,prog,a){G.save();G.globalCompositeOperation='lighter';const col=ROSTER[0].col;
+  const path=[[200,SQ],[SQ,SQ],[SQ,-SQ],[0,-SQ]],L=[];let tot=0;for(let i=1;i<path.length;i++){L.push(Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]));tot+=L[i-1];}
+  for(const s of[-1,1]){let left=prog*tot;const pts=[];for(let i=1;i<path.length&&left>0;i++){const k=Math.min(1,left/L[i-1]);left-=L[i-1];
+      const a0=path[i-1],a1=path[i];if(i===1)pts.push([s*a0[0],a0[1]]);pts.push([s*lerp(a0[0],a1[0],k),lerp(a0[1],a1[1],k)]);}
+    const sc=pts.map(p=>P(p[0],0,p[1])).filter(Boolean);if(sc.length<2)continue;
+    for(const[lw,c,al]of[[9,col,.35],[3,mixC(col,'#ffffff',.4),.9],[1.2,'#ffffff',1]]){G.globalAlpha=al*a;G.strokeStyle=c;G.lineWidth=lw;G.beginPath();sc.forEach((p,i)=>i?G.lineTo(p[0],p[1]):G.moveTo(p[0],p[1]));G.stroke();}
+    const hd=sc[sc.length-1];if(prog<1){G.globalAlpha=a;G.drawImage(glowSprite(col),hd[0]-30,hd[1]-30,60,60);}}G.restore();}
+function ashField(X,P,n){for(let i=0;i<n;i++){const x=(hash(i*1.3)-.5)*2600,z=(hash(i*2.1)-.5)*2600;if(Math.abs(x)<SQ+40&&Math.abs(z)<SQ+40&&hash(i*7)>.3)continue;
+  const lean=(hash(i*4.4)-.5)*50;const a=P(x,0,z),b=P(x+lean,-70-hash(i)*40,z);if(a&&b){X.strokeStyle=INK;X.lineWidth=Math.max(1,a[2]*5);X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke();
+    X.lineWidth=Math.max(1,a[2]*3);const m=[lerp(a[0],b[0],.75),lerp(a[1],b[1],.75)];X.beginPath();X.moveTo(m[0]-a[2]*12,m[1]);X.lineTo(m[0]+a[2]*12,m[1]);X.stroke();}}}
+MOVIES.gatesAshfield=(A,D)=>{const red=A.ch.col,cy=D.ch.col,S0={};
+ const ctx={hero:A.ch,op:D.ch,stage:'dusk'};
+ const cutPose=Q('blade',{fx:[64,-52],y:32,lean:.5,aF:[1.7,0,0],wa:1.85,aB:[-1.4,.3]});
+ return{movie:1,title:null,dmg:99999,hits:1,impCol:red,shots:[
+  // 1 — flashback, close: a key turning in the city gate
+  pastify({d:3,draw(X,G,u,t){const W=V.W,H=V.H,lx=W*.5,ly=H*.5;vsky(X,[[0,'#1a120c'],[1,'#2a1c12']],0,H);
+     X.fillStyle='#120b07';for(let i=0;i<9;i++)X.fillRect(i*W/9,0,W/9-3,H);
+     const wl=X.createRadialGradient(lx,ly,0,lx,ly,H*.7);wl.addColorStop(0,'rgba(255,170,90,.55)');wl.addColorStop(.5,'rgba(160,80,30,.18)');wl.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=wl;X.fillRect(0,0,W,H);
+     X.fillStyle='#2e1e12';X.fillRect(lx-H*.2,ly-H*.32,H*.4,H*.64);X.fillStyle=INK;for(const[a,b]of[[-1,-1],[1,-1],[-1,1],[1,1]]){X.beginPath();X.arc(lx+a*H*.16,ly+b*H*.27,H*.016,0,TAU);X.fill();}
+     glowAt(G,lx,ly,H*.18,EMBER,.9);
+     // the key's bow and the gloved fingers on it turn together around the keyhole
+     const turn=E.io(seg01(u,.35,.7))*PI/2,key=c=>{c.save();c.translate(lx,ly);c.rotate(turn);c.fillStyle=INK;c.fillRect(-H*.012,-H*.02,H*.024,H*.05);
+       c.beginPath();c.ellipse(0,-H*.1,H*.06,H*.07,0,0,TAU);c.ellipse(0,-H*.1,H*.03,H*.036,0,0,TAU,true);c.fill('evenodd');
+       palmHand(c,H*.02,-H*.06,H/300,-PI*.62,.75);palmHand(c,-H*.035,-H*.14,H/300,PI*.1,.9);c.restore();};
+     key(X);G.save();G.globalCompositeOperation='destination-out';key(G);G.restore();},
+   sub:['vex','A key. A door. A purse of silver.'],subAt:.3,ev:[[.05,()=>SFX.pad([98,146.8,196],18,.04)],[2.1,()=>{SFX.block();SFX.land(.6);}]]}),
+  // 2 — flashback, inside the city: the gate swings in, and the Dusk comes through it
+  pastify({d:3.2,draw(X,G,u,t){const gz=1600,op=E.io(seg01(u,.1,.75)),P=pcam({x:0,y:-110,z:gz-1000+u*70,pitch:-.12,f:V.H*1.05});
+     ashGate(X,G,P,{gz,open:op,beyond:ashBeyond(gz,.25+op*.75),figs:[{x:-270,z:gz-90,d:()=>pfig(X,G,P,D.ch,-270,gz-90,{back:true,pose:'loose'})}]});},
+   sub:['ashen','The first night of the Dusk.'],subAt:.6,ev:[[.3,()=>SFX.wind(3)],[.6,()=>SFX.boom(.7)]]}),
+  // 3 — flashback, from above: the city burning outward from its gate
+  pastify({d:3,draw(X,G,u,t){const P=pcam({x:0,y:-2500+u*200,z:1200,pitch:PI/2,yaw:.35+u*.08,f:V.H*1.2});X.fillStyle='#120806';X.fillRect(0,0,V.W,V.H);
+     pfill(X,P,[[-1400,0,-300],[1400,0,-300],[1400,0,2600],[-1400,0,2600]],'#2a160c');const boxes=[];
+     for(let i=-6;i<=6;i++)for(let j=0;j<12;j++){if(i===0)continue;const x=i*205+(hash(i*9+j)-.5)*30,z=80+j*205+(hash(i+j*5)-.5)*30,w=62+hash(i*3+j)*26,h=80+hash(i+j*7)*130,k=clamp((u*1.7-(j/11)*.9-hash(i*2+j)*.35)*3,0,1);
+       if(k>0)pglow(X,P,x,z,w*3.2,EMBER,.25*k);boxes.push([x,z,w,h,k]);}
+     for(const b of boxes)pbx(X,P,b[0]-b[2],b[0]+b[2],-b[3],0,b[1]-b[2],b[1]+b[2]);
+     pbx(X,P,-1400,-120,-300,0,-160,-100);pbx(X,P,120,1400,-300,0,-160,-100);
+     for(const b of boxes)if(b[4]>0){const q=P(b[0],-b[3],b[1]);if(q){glowAt(G,q[0],q[1],q[2]*b[2]*2.4*b[4],EMBER,.8);if(rnd()<.04*b[4])pt({x:q[0],y:q[1],vx:rnd(40,-40),vy:rnd(40,-40),l:rnd(1.2,.5),s:rnd(3,1.5),c:EMBER,t:'ember',g:0});}}},
+   sub:['ashen','Forty thousand people.'],subAt:.5}),
+  // 4 — flashback: he held the gate while they poured past him
+  pastify({d:3.2,draw(X,G,u,t){const gz=1600,P=pcam({x:40,y:-160,z:gz-700,pitch:-.03,f:V.H*1.05}),kn=u>.74;
+     const figs=[{x:0,z:gz-40,d:()=>pfig(X,G,P,A.ch,0,gz-40,{back:true,pose:kn?'kneel':'guard',headDrop:kn?8:0,rim:EMBER,rimDx:1.2})}];
+     for(let i=0;i<11;i++){const x=(hash(i*2.3)>.5?1:-1)*(110+hash(i*4.1)*330),z=gz+300-((t*300+hash(i)*1100)%1100);figs.push({x,z,d:()=>pfig(X,G,P,SOLDIER,x,z,{pose:'guard',y:-Math.abs(Math.sin(t*9+i))*6,t:t+i})});}
+     ashGate(X,G,P,{gz,open:1,beyond:ashBeyond(gz,1),fireTop:.8,figs});},
+   sub:['vex','I watched him hold it until the fire reached him.'],subAt:.3}),
+  // 5 — flashback: his eyes, the city burning in them, closing
+  pastify({d:2.6,fout:.6,draw(X,G,u){drawEyesClose(X,G,A.ch,1-E.io(seg01(u,.35,.85)),{zoom:1.05+u*.06,brow:.2,reflect:(g,x,y,r)=>{g.fillStyle=EMBER;for(let i=-2;i<=2;i++){const h=r*(.5+.4*Math.sin(gameT*9+i*2));g.beginPath();g.moveTo(x+i*r*.3-r*.12,y+r*.3);g.quadraticCurveTo(x+i*r*.3,y+r*.3-h,x+i*r*.3+r*.12,y+r*.3);g.fill();}}});},
+   sub:['ashen','I died on that field.'],subAt:.3}),
+  // 6, 7 — present
+  Object.assign(bustShot([['vex','...I did not know about the fire.']],ctx,2),{ev:[[.05,()=>SFX.pad([87.3,130.8,174.6,220],20,.04)]]}),
+  lowShot([['ashen','Neither did they.']],ctx),
+  // 8 — the blade goes into the earth
+  {d:1.7,flat:[[.5,.54,'w'],[.54,.58,'b']],flatThr:50,draw(X,G,u,t){const W=V.W,H=V.H,gy=H*.74;stageBack(X,G,'dusk',{y:-40,z:2.4,haze:.12});X.fillStyle=INK;X.fillRect(0,gy,W,H-gy);
+     const k=E.i(seg01(t,.1,.5)),tip=lerp(-H*.25,gy+H*.04,k),bx=W*.5,bl=c=>{c.beginPath();c.moveTo(bx-H*.04,tip-H*1.4);c.lineTo(bx+H*.034,tip-H*1.4);c.lineTo(bx+H*.03,tip-H*.1);c.lineTo(bx,tip);c.lineTo(bx-H*.034,tip-H*.12);c.fill();c.fillRect(bx-H*.09,tip-H*.95,H*.18,H*.03);};
+     X.fillStyle=INK;bl(X);G.save();G.globalCompositeOperation='destination-out';bl(G);G.restore();G.save();G.globalCompositeOperation='lighter';G.strokeStyle=red;G.lineWidth=2.2;G.globalAlpha=.9;G.beginPath();G.moveTo(bx+H*.034,tip-H*.93);G.lineTo(bx+H*.03,tip-H*.1);G.lineTo(bx,tip);G.stroke();G.restore();
+     if(t>.5){const g2=seg01(t,.5,1.4);G.save();G.globalCompositeOperation='lighter';for(let i=0;i<10;i++){const s=i%2?1:-1,L=W*.55*g2*(.6+hash(i)*.4);let x=bx,y=gy+H*.01;G.strokeStyle=red;G.lineWidth=2.4;G.globalAlpha=.9;G.beginPath();G.moveTo(x,y);
+       for(let j=1;j<=8;j++){x=bx+s*L*j/8;y=gy+H*.01+(hash(i*9+j)-.5)*H*.02+j*H*.004*(hash(i)-.3);G.lineTo(x,y);}G.stroke();}G.restore();glowAt(G,bx,gy,H*.25*(1-g2*.5),red,.8);}},
+   ev:[[.5,()=>{SFX.impact();shake(24);}]]},
+  // 9 — from above: the crack runs out and around her, drawing the walls of a city
+  {d:2.4,draw(X,G,u,t){const P=pcam({x:0,y:-2500+u*150,z:0,pitch:PI/2,yaw:-.25+u*.12,f:V.H*1.2});X.fillStyle='#160a08';X.fillRect(0,0,V.W,V.H);
+     pfill(X,P,[[-1800,0,-1800],[1800,0,-1800],[1800,0,1800],[-1800,0,1800]],'#3a2216');pglow(X,P,0,0,1400,'#ff6a2a',.18);ashField(X,P,90);
+     topFig(X,P,0,-120,'stand',2,0,560);topFig(X,P,0,560,'stand',2.1,0,-120);const q=P(0,-10,540);if(q)glowAt(G,q[0],q[1],q[2]*50,red,.7);
+     fireLines(G,P,E.io(seg01(u,0,.85)),1);},ev:[[.05,()=>SFX.rise(2)]]},
+  // 10 — behind her: the walls rise, the gate rises behind him, and closes
+  {d:3,draw(X,G,u,t){const P=pcam({x:70,y:-120,z:-470+u*40,pitch:-.13,f:V.H*1.05}),h=460*E.o(seg01(u,0,.45)),gh=E.o(seg01(u,.08,.55)),cl=E.io(seg01(u,.55,.88));
+     psky(X,P,STAGES.dusk.sky,'#140a08');pfill(X,P,[[-2000,0,-1000],[2000,0,-1000],[2000,0,3000],[-2000,0,3000]],'#1c0e0a');fireLines(G,P,1,1-u*.5);
+     const items=[];for(const sd of wallSides()){if(sd[5]===-1)continue;const [x0,z0,x1,z1]=sd;items.push({x:(x0+x1)/2,z:(z0+z1)/2,d:()=>{if(h>2)pbx(X,P,x0-(sd[4]?20:0),x1+(sd[4]?20:0),-h,0,z0-(sd[5]?20:0),z1+(sd[5]?20:0));}});}
+     items.push({x:0,z:SQ,d:()=>{for(const s of[-1,1])pbx(X,P,s*200,s*360,-640*gh,0,SQ-50,SQ+50);if(gh>.85)pbx(X,P,-200,200,-470,-380,SQ-40,SQ+40);
+       const a=(1-cl)*1.3;for(const s of[-1,1]){const hx0=s*200,ex=hx0-s*200*Math.cos(a),ez=SQ+200*Math.sin(a);if(gh>.85)pquad(X,P,[[hx0,0,SQ],[ex,0,ez],[ex,-380,ez],[hx0,-380,SQ]]);}}});
+     items.push({x:0,z:-120,d:()=>pfig(X,G,P,D.ch,0,-120,{back:true,pose:'loose',rim:cy,rimDx:1.1})});
+     items.push({x:0,z:540,d:()=>pfig(X,G,P,A.ch,0,540,{pose:'guard',hot:1,rim:red,rimDx:-1.2})});
+     PCUT=G;try{sortDraw(P,items);}finally{PCUT=null;}
+     // the walls are made of his fire: a burning edge along every top
+     if(h>30){const edge=(a,b)=>{const p=P(a[0],-h,a[1]),q=P(b[0],-h,b[1]);if(!p||!q)return;G.save();G.globalCompositeOperation='lighter';for(const[lw,c,al]of[[14,red,.35],[4,mixC(red,'#ffffff',.4),.9]]){G.globalAlpha=al;G.strokeStyle=c;G.lineWidth=lw;G.beginPath();G.moveTo(p[0],p[1]);G.lineTo(q[0],q[1]);G.stroke();}G.restore();};
+       edge([-SQ,-SQ],[-SQ,SQ]);edge([SQ,-SQ],[SQ,SQ]);edge([-SQ,SQ],[-360,SQ]);edge([360,SQ],[SQ,SQ]);
+       const fs=q=>Math.min(q[2]*55,V.H*.035);
+       for(let x=-SQ;x<=SQ;x+=70){const q=P(x,-h,SQ);if(q&&Math.abs(x)>380)flame(X,G,q[0],q[1],fs(q),red,t+x,.45);}
+       for(const s of[-1,1])for(let z=-SQ+60;z<=SQ;z+=80){const q=P(s*SQ,-h,z);if(q)flame(X,G,q[0],q[1],fs(q),red,t+z*1.3,.45);}}},
+   sub:['ashen','This time, the gates hold.'],subAt:1.3,ev:[[.1,()=>SFX.boom(1)],[2.5,()=>{SFX.impact();shake(14);}]]},
+  // 11 — dark inside the walls: two pairs of eyes, then the one cut
+  {d:2.4,draw(X,G,u,t,S){const W=V.W,H=V.H,cut=t>=1.3&&t<1.42,after=t>=1.42;X.fillStyle='#030102';X.fillRect(0,0,W,H);
+     G.save();G.globalCompositeOperation='lighter';for(let i=0;i<14;i++){const x=W*hash(i*3.3),y=H*(.14+hash(i)*.06);G.globalAlpha=.25+.2*Math.sin(t*5+i);G.drawImage(glowSprite(red),x-30,y-12,60,24);}G.restore();
+     const eyes=(x,y,col,a,s)=>{if(a<=0)return;G.save();G.globalCompositeOperation='lighter';G.globalAlpha=a;for(const d of[-1,1]){G.drawImage(glowSprite(col),x+d*s*1.4-s*2,y-s,s*4,s*2);G.fillStyle=mixC(col,'#ffffff',.6);G.fillRect(x+d*s*1.4-s*.6,y-s*.12,s*1.2,s*.26);}G.restore();};
+     if(cut){X.fillStyle=red;X.fillRect(0,0,W,H);const sc=H/300;X.save();X.translate(W*.7,H*.84);X.scale(sc,sc);drawBody(X,A.ch,cutPose,1,t,{plant:1,nosim:1});X.restore();
+       X.save();X.translate(W*.3,H*.84);X.scale(-sc,sc);drawBody(X,D.ch,D.P.hurtH,1,t,{plant:1,nosim:1});X.restore();X.fillStyle='#ffffff';X.fillRect(0,H*.5-2,W,4);return;}
+     if(!after){eyes(W*.36,H*.47,cy,1,H*.012);eyes(W*.62,H*.45,red,seg01(t,.3,.5)+.4,H*.013*(1+seg01(t,.9,1.3)*.4));}
+     else{const f=seg01(t,1.42,2.3);G.save();G.globalCompositeOperation='lighter';G.globalAlpha=1-f;G.fillStyle=red;G.fillRect(0,H*.5-1.5*(1-f),W,3*(1-f));G.globalAlpha=(1-f)*.5;G.drawImage(glowSprite(red),0,H*.5-40,W,80);G.restore();
+       eyes(W*.3,H*.5,cy,(1-seg01(t,1.5,2.2))*.9,H*.011);eyes(W*.74,H*.46,red,1,H*.013);}},
+   ev:[[.3,()=>SFX.heart()],[.9,()=>SFX.heart()],[1.3,()=>{SFX.slash(1.3);SFX.impact();shake(28);}]]},
+  // 12 — from above: the walls fall outward and go out; she does not get up
+  {d:4,draw(X,G,u,t){const P=pcam({x:0,y:-3100,z:0,pitch:PI/2,yaw:.1,f:V.H*1.2}),fa=E.i2(seg01(u,0,.45))*PI/2*.97,fire=1-seg01(u,.2,.7);
+     X.fillStyle='#160a08';X.fillRect(0,0,V.W,V.H);pfill(X,P,[[-2400,0,-2400],[2400,0,-2400],[2400,0,2400],[-2400,0,2400]],'#3a2216');pglow(X,P,0,0,1500,'#ff6a2a',.15);ashField(X,P,110);fireLines(G,P,1,fire*.6);
+     for(const sd of wallSides()){const [x0,z0,x1,z1,nx,nz]=sd,hh=460,dx=nx*hh*Math.sin(fa),dy=-hh*Math.cos(fa),dz=nz*hh*Math.sin(fa);
+       pfill(X,P,[[x0,0,z0],[x1,0,z1],[x1+dx,dy,z1+dz],[x0+dx,dy,z0+dz]],'#0a0405');
+       for(let k=0;k<=4;k++){const q=P(lerp(x0,x1,k/4)+dx,dy,lerp(z0,z1,k/4)+dz);if(q&&fire>0)glowAt(G,q[0],q[1],q[2]*70,red,.5*fire);}}
+     topFig(X,P,0,-120,'lie',2.2,-60,-400);const az=lerp(560,1100,E.io(seg01(u,.45,1)));topFig(X,P,0,az,'stand',2.3,0,az+200);
+     if(rnd()<.7){pt({x:rnd(V.W),y:rnd(V.H),vx:rnd(20,-20),vy:rnd(20,-20),l:rnd(2,1),s:rnd(3,1.5),c:'#8a8078',t:'ember',g:0});}},
+   subs:[['vex','...Tell them I am sorry.',.9,2.3],['ashen','Tell them yourself.',2.5,3.9]],ev:[[.2,()=>SFX.boom(.8)]]},
+  // 13 — the burnt field at dusk; his sword planted with the others
+  {d:3,fout:.9,draw(X,G,u,t){const W=V.W,H=V.H;stageBack(X,G,'dusk',{y:-110,z:1.3,haze:.1,x:u*40});const gy=H*.8;X.fillStyle=INK;X.fillRect(0,gy,W,H-gy);
+     for(let i=0;i<26;i++){const x=W*hash(i*1.9),d=.4+hash(i*3.3)*.6,y=gy+H*.02*d,l=H*.09*d,lean=(hash(i*5.1)-.5)*.3;X.strokeStyle=INK;X.lineWidth=2+d*3;X.beginPath();X.moveTo(x,y);X.lineTo(x+Math.sin(lean)*l,y-l);X.stroke();X.beginPath();X.moveTo(x+Math.sin(lean)*l*.75-l*.12,y-l*.75);X.lineTo(x+Math.sin(lean)*l*.75+l*.12,y-l*.75);X.stroke();}
+     sil(X,G,A.ch,W*.58,gy+H*.02,H/330,{back:true,pose:'loose',noWeapon:1});X.fillStyle=INK;X.fillRect(W*.64,gy-H*.34,H*.012,H*.36);X.fillRect(W*.64-H*.02,gy-H*.2,H*.052,H*.01);
+     if(rnd()<.8)pt({x:rnd(W),y:-10,vx:rnd(30,-10),vy:rnd(50,20),l:4,s:rnd(2.5,1),c:'#9a9088',t:'ember',g:4});},ev:[[.1,()=>SFX.wind(3)]]},
+  card2('THE GATES OF ASHFIELD','ASHEN  ·  VEX',red),
+ ]};};
+
+/* =======================================================================
+   THE STOLEN STORM — Goliath finishes Bolt at the Crucible.
+   The forge was fed by a storm caged beneath it. Bolt broke the cage and
+   the storm went into him; the fires went out. Goliath does not tear it
+   out. He forges it out, three blows on the great anvil, and it goes home.
+   ======================================================================= */
+const STORMC='#3a9dff';
+function anvilSide(c,x,y,s){c.save();c.translate(x,y);c.scale(s,s);c.fillStyle=INK;c.beginPath();
+  c.moveTo(-120,0);c.quadraticCurveTo(-190,-4,-230,-24);c.quadraticCurveTo(-170,-30,-120,-34);c.lineTo(110,-34);c.lineTo(118,-4);c.lineTo(60,0);c.lineTo(46,50);c.lineTo(80,96);c.lineTo(-80,96);c.lineTo(-46,50);c.lineTo(-60,0);c.closePath();c.fill();c.restore();}
+function cage(X,G,cx,cyT,cyB,rx,t,st,o){o=o||{};const ry=rx*.28;
+  if(st>0){glowAt(G,cx,(cyT+cyB)/2,(cyB-cyT)*.8,STORMC,.5*st);for(let i=0;i<4;i++){const sd=Math.floor(t*14)+i*13;zap(G,cx+(hash(sd)-.5)*rx*1.4,cyT+ry,cx+(hash(sd+1)-.5)*rx*1.4,cyB-ry,STORMC,1.4,sd);}}
+  const bars=c=>{c.fillStyle=INK;c.strokeStyle=INK;for(let i=0;i<16;i++){const a=i/16*TAU,x=cx+Math.cos(a)*rx,w=Math.sin(a)>0?rx*.09:rx*.05,bend=o.burst?o.burst*Math.cos(a)*rx*2.2:0;
+      c.beginPath();c.moveTo(x-w/2,cyB);c.quadraticCurveTo(x+bend*.3,(cyT+cyB)/2,x+bend-w/2,cyT-(o.burst||0)*rx*.6);c.lineTo(x+bend+w/2,cyT-(o.burst||0)*rx*.6);c.quadraticCurveTo(x+bend*.3+w,(cyT+cyB)/2,x+w/2,cyB);c.fill();}
+    c.lineWidth=rx*.09;for(const y of[cyB,(cyT+cyB)/2,cyT])if(!o.burst||y===cyB){c.beginPath();c.ellipse(cx,y,rx,ry,0,0,TAU);c.stroke();}};
+  bars(X);G.save();G.globalCompositeOperation='destination-out';bars(G);G.restore();}
+/* the forge hall, painted flat: three furnaces, the storm cage, the smiths at their anvils */
+function forgeHall(X,G,t,o){o=o||{};const W=V.W,H=V.H,fy=H*.64,heat=o.heat||[1,1,1];
+  vsky(X,[[0,'#0c0604'],[1,'#22140a']],0,H);X.strokeStyle='rgba(0,0,0,.4)';X.lineWidth=2;for(let r=0;r<14;r++){const y=r*H*.047;X.beginPath();X.moveTo(0,y);X.lineTo(W,y);X.stroke();for(let k=0;k<22;k++){const x=(k+(r%2)*.5)*W/21;X.beginPath();X.moveTo(x,y);X.lineTo(x,y+H*.047);X.stroke();}}
+  [.14,.5,.86].forEach((f,i)=>{const x=W*f,w=H*.2,h=H*.22,k=heat[i];if(k>0){glowAt(G,x,fy-h*.5,h*2.4,'#ff7a22',.45*k);
+      const mg=G.createLinearGradient(0,fy-h,0,fy);mg.addColorStop(0,'#c83a08');mg.addColorStop(1,'#ffb050');G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.8*k;G.fillStyle=mg;
+      G.beginPath();G.moveTo(x-w/2,fy);G.lineTo(x-w/2,fy-h*.55);G.quadraticCurveTo(x,fy-h*1.3,x+w/2,fy-h*.55);G.lineTo(x+w/2,fy);G.fill();G.restore();
+      const fl=X.createRadialGradient(x,fy,0,x,fy,H*.45);fl.addColorStop(0,`rgba(170,80,25,${.5*k})`);fl.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=fl;X.fillRect(x-H*.5,fy-H*.3,H,H*.8);}
+    X.fillStyle=INK;X.beginPath();X.rect(x-w*1.1,fy-h*2.1,w*2.2,h*2.1+1);X.moveTo(x-w/2,fy);X.lineTo(x-w/2,fy-h*.55);X.quadraticCurveTo(x,fy-h*1.3,x+w/2,fy-h*.55);X.lineTo(x+w/2,fy);X.closePath();X.fill('evenodd');X.fillRect(x-w*.35,0,w*.7,fy-h*2);});
+  X.fillStyle=INK;X.fillRect(0,fy,W,H-fy);const hk=(heat[0]+heat[1]+heat[2])/3;if(hk>0){const g=X.createLinearGradient(0,fy,0,H);g.addColorStop(0,`rgba(120,50,15,${.5*hk})`);g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(0,fy,W,H-fy);}
+  for(let i=0;i<5;i++){const x=W*(.06+i*.22)+Math.sin(t*.6+i)*3,L=H*(.12+hash(i)*.16);X.fillStyle=INK;for(let j=0;j<L;j+=9){X.beginPath();X.ellipse(x,j,3,5,0,0,TAU);X.fill();}X.beginPath();X.moveTo(x-8,L);X.quadraticCurveTo(x,L+22,x+10,L+8);X.lineWidth=4;X.strokeStyle=INK;X.stroke();}
+  if(o.cage!==false)cage(X,G,W*.5,H*.34,H*.94,W*.1,t,o.storm===undefined?1:o.storm);
+  (o.smiths||[]).forEach((m,i)=>{const x=W*m.x,y=H*.93,ph=(t*1.3+i*.41)%1,up=m.pose?false:ph<.62;anvilSide(X,x+(m.dir||1)*H*.07,y-H*.05,H/1300);
+    const r=sil(X,G,SMITH,x,y,H/560,{pose:m.pose||(up?'raise':'guard'),hot:.3,t:t+i});
+    if(!m.pose){const hx2=(r.hands[0][0]+r.hands[1][0])/2,hy=Math.min(r.hands[0][1],r.hands[1][1]);X.fillStyle=INK;X.fillRect(hx2-H*.015,hy-(up?H*.05:-H*.01),H*.03,H*.02);
+      if(ph>.62&&ph<.68&&rnd()<.7)for(let k=0;k<4;k++)pt({x:x+(m.dir||1)*H*.07,y:y-H*.1,vx:rnd(260,-260),vy:-rnd(300,60),l:rnd(.5,.2),s:rnd(2,1),c:'#ffc060',t:'spark',g:600});}});}
+function forgeFloor(X,G,P,o){o=o||{};X.fillStyle='#0c0806';X.fillRect(0,0,V.W,V.H);pfill(X,P,[[-1500,0,-1500],[1500,0,-1500],[1500,0,1500],[-1500,0,1500]],o.floor||'#20150e');
+  X.strokeStyle='rgba(0,0,0,.5)';X.lineWidth=1.5;for(let v=-1500;v<=1500;v+=150){const a=P(v,0,-1500),b=P(v,0,1500),c=P(-1500,0,v),d=P(1500,0,v);if(a&&b){X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke();}if(c&&d){X.beginPath();X.moveTo(c[0],c[1]);X.lineTo(d[0],d[1]);X.stroke();}}
+  const st=o.storm||0,c0=P(0,0,0);if(c0){const R=c0[2]*330;G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.25+st*.75;G.drawImage(glowSprite(STORMC),c0[0]-R,c0[1]-R,R*2,R*2);G.restore();
+    X.strokeStyle=INK;X.lineWidth=Math.max(2,c0[2]*14);for(let i=0;i<12;i++){const a=i/12*TAU,p=P(Math.cos(a)*300,0,Math.sin(a)*300),q=P(Math.cos(a)*60,0,Math.sin(a)*60);if(p&&q){X.beginPath();X.moveTo(p[0],p[1]);X.lineTo(q[0],q[1]);X.stroke();}}
+    X.beginPath();X.arc(c0[0],c0[1],c0[2]*300,0,TAU);X.stroke();X.beginPath();X.arc(c0[0],c0[1],c0[2]*170,0,TAU);X.stroke();}
+  const heat=o.heat||[0,0,0];[-700,0,700].forEach((x,i)=>{pbx(X,P,x-160,x+160,-260,0,1150,1350);if(heat[i]>0){const q=P(x,-60,1140);if(q)glowAt(G,q[0],q[1],q[2]*420,'#ff7a22',.7*heat[i]);}});}
+MOVIES.stolenStorm=(A,D)=>{const col=A.ch.col,S0={},ctx={hero:A.ch,op:D.ch,stage:'forge'};
+ return{movie:1,title:null,dmg:99999,hits:3,impCol:STORMC,shots:[
+  // 1 — flashback: the forge as it was, fed by a storm in a cage
+  pastify({d:3.2,draw(X,G,u,t){forgeHall(X,G,t,{smiths:[{x:.26,dir:1},{x:.74,dir:-1}]});},
+   sub:['goliath','The forge was fed by a storm.'],subAt:.4,ev:[[.05,()=>SFX.pad([82.4,123.5,164.8],18,.04)],[.2,()=>SFX.thunder()],[.5,()=>SFX.block()],[1.3,()=>SFX.block()],[2.1,()=>SFX.block()]]}),
+  // 2 — flashback, close: a forge hand reaches between the bars
+  pastify({d:2.6,draw(X,G,u,t){const W=V.W,H=V.H;vsky(X,[[0,'#08101c'],[1,'#101a28']],0,H);glowAt(G,W*.4,H*.5,H*.7,STORMC,.7);
+     for(let i=0;i<5;i++){const sd=Math.floor(t*16)+i*7;zap(G,W*(.1+hash(sd)*.5),H*.05,W*(.1+hash(sd+2)*.5),H*.95,STORMC,2.2,sd);}
+     const k=E.o(seg01(u,.05,.55)),fx=lerp(W*.95,W*.52,k),fy=H*.56;
+     if(u>.55){const sd=Math.floor(t*20);zap(G,W*.36,H*.5,fx-H*.12,fy-H*.02,STORMC,1.4+seg01(u,.55,1)*2,sd);}
+     const bars=c=>{c.fillStyle=INK;for(const x of[.2,.38,.62,.8])c.fillRect(W*x-H*.035,0,H*.07,H);c.fillRect(0,H*.1,W,H*.05);c.fillRect(0,H*.85,W,H*.05);};bars(X);G.save();G.globalCompositeOperation='destination-out';bars(G);G.restore();
+     palmHand(X,fx,fy,H/200,-PI/2,.1);G.save();G.globalCompositeOperation='destination-out';palmHand(G,fx,fy,H/200,-PI/2,.1);G.restore();},
+   sub:['bolt','I just wanted to see it.'],subAt:.4,ev:[[1.5,()=>SFX.zap()]]}),
+  // 3 — flashback, from below: the cage bursts
+  pastify({d:1.8,flat:[[.42,.47,'w'],[.47,.52,'b']],flatThr:70,draw(X,G,u,t){const W=V.W,H=V.H,b=E.o(seg01(t,.35,1.2));vsky(X,[[0,'#1a2a44'],[1,'#3a5a88']],0,H);
+     cage(X,G,W*.5,H*.1,H*1.1,W*.28,t,1,{burst:b});if(t>.35){zap(G,W*.5,H*1.1,W*.5+(hash(Math.floor(t*20))-.5)*W*.1,-H*.1,'#b8dcff',6,Math.floor(t*20));glowAt(G,W*.5,H*.5,H*(.6+b),STORMC,.8);}},
+   ev:[[.4,()=>{SFX.thunder();SFX.impact();shake(26);}]]}),
+  // 4 — flashback: it goes into him, and the fires go out one by one
+  pastify({d:3,draw(X,G,u,t){const W=V.W,H=V.H,heat=[1-seg01(u,.3,.45),1-seg01(u,.5,.65),1-seg01(u,.7,.85)];forgeHall(X,G,t,{heat,cage:false});
+     const fl=E.o(seg01(u,0,.25)),r=sil(X,G,D.ch,W*.5,H*(.92-fl*.06),H/360,{pose:'raise',over:{L:[2.3,.4],R:[2.4,.3]},tilt:-.22*fl,headTilt:-.3,hot:1});
+     const sd=Math.floor(t*18);zap(G,W*.5+(hash(sd)-.5)*W*.05,-10,r.chest[0],r.chest[1],'#b8dcff',3*(1-u*.5),sd);coreAt(G,r.chest[0],r.chest[1],H*.03,STORMC,.9);},
+   sub:['goliath','It went into him. And the fires went out.'],subAt:.3,ev:[[.2,()=>SFX.zap()],[.9,()=>SFX.sizzle()],[1.5,()=>SFX.sizzle()],[2.1,()=>SFX.sizzle()]]}),
+  // 5 — flashback, from above: a cold forge, and the one thing in it still standing
+  pastify({d:3,draw(X,G,u,t){const P=pcam({x:0,y:-1750+u*120,z:150,pitch:PI/2,yaw:.2+u*.08,f:V.H*1.2});forgeFloor(X,G,P,{storm:0,heat:[0,0,0]});
+     PCUT=G;try{for(let i=0;i<6;i++){const a=i/6*TAU+.4,x=Math.cos(a)*620,z=Math.sin(a)*520;pbx(X,P,x-70,x+70,-80,0,z-34,z+34);topC(X,G,P,x+110*Math.cos(a),z+110*Math.sin(a),i%2?'lie':'kneel',2.4,x,z);}}finally{PCUT=null;}
+     topC(X,G,P,0,-60,'stand',4.2,0,300);},
+   sub:['goliath','The smiths have been cold ever since.'],subAt:.4,ev:[[.1,()=>SFX.wind(3)]]}),
+  // 6, 7 — present
+  Object.assign(bustShot([['bolt','Go on, then. Tear it out.']],ctx,0),{ev:[[.05,()=>SFX.pad([73.4,110,146.8,185],20,.04)]]}),
+  eyesShot([['goliath','No. I will forge it out.']]),
+  // 8 — his point of view: the hand coming for him
+  {d:1.4,draw(X,G,u,t){const W=V.W,H=V.H;stageBack(X,G,'forge',{y:-200,z:2,haze:.14});const k=E.i(seg01(u,.1,1)),sc=H/(300-k*230);
+     sil(X,G,A.ch,W*.5,H*.62+130*sc,sc,{pose:'push',hot:1,rim:'#ff9a40',rimDx:1.2});if(u>.92){X.fillStyle=INK;X.fillRect(0,0,W,H);}},
+   ev:[[1.15,()=>SFX.grab()]]},
+  // 9 — from above: onto the anvil, over the cage
+  {d:1.6,draw(X,G,u,t){const P=pcam({x:0,y:-1300,z:60,pitch:PI/2,yaw:-.3,f:V.H*1.2});forgeFloor(X,G,P,{storm:.35,heat:[0,0,0]});
+     PCUT=G;try{pbx(X,P,-170,170,-110,0,-70,70);}finally{PCUT=null;}topC(X,G,P,0,0,'lie',2.2,300,20);topC(X,G,P,-40,250,'stand',4,0,0);
+     const rr=seg01(t,.08,.9);const c=P(0,-110,0);if(c&&rr>0&&rr<1){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=1-rr;G.strokeStyle='#ffd0a0';G.lineWidth=(1-rr)*10+1;G.beginPath();G.arc(c[0],c[1],rr*V.H*.5,0,TAU);G.stroke();G.restore();}},
+   ev:[[.08,()=>{SFX.land(1);SFX.impact();shake(20);}]]},
+  // 10 — from the anvil, looking up: the hammer rises and comes down
+  {d:1.8,flat:[[1.5,1.54,'w'],[1.54,1.58,'b']],flatThr:14,draw(X,G,u,t){const W=V.W,H=V.H;vsky(X,[[0,'#140a06'],[.7,'#3a1c0c'],[1,'#7a3814']],0,H);glowAt(G,W*.5,H*.95,H*.9,'#ff7a22',.5);
+     for(let i=0;i<5;i++){const x=W*(.1+i*.2);X.strokeStyle=INK;X.lineWidth=4;X.beginPath();X.moveTo(x,0);X.lineTo(x+(i-2)*W*.05,H*.35);X.stroke();}
+     const r=sil(X,G,A.ch,W*.5,H*1.35,H/200,{pose:'raise',over:{L:[2.9,.25],R:[2.9,.25]},noWeapon:1,hot:1,rim:'#ff9a40',rimDx:1.3});
+     const hx2=(r.hands[0][0]+r.hands[1][0])/2,hy=Math.min(r.hands[0][1],r.hands[1][1]),sw=E.i(seg01(t,1.1,1.5)),hs=H*(.13+sw*.6),cx=lerp(hx2,W*.5,sw),cy=lerp(hy-H*.2,H*.62,sw);
+     const ham=c=>{c.fillStyle=INK;c.fillRect(lerp(hx2,cx,.5)-H*.012,Math.min(hy,cy),H*.024,Math.abs(hy-cy)+2);c.fillRect(cx-hs*.8,cy-hs*.45,hs*1.6,hs*.9);};ham(X);G.save();G.globalCompositeOperation='destination-out';ham(G);G.restore();
+     G.save();G.globalCompositeOperation='lighter';G.strokeStyle=col;G.lineWidth=2+sw*4;G.globalAlpha=.9;G.beginPath();G.moveTo(cx-hs*.5,cy-hs*.3);G.lineTo(cx-hs*.2,cy);G.lineTo(cx-hs*.35,cy+hs*.3);G.moveTo(cx+hs*.4,cy-hs*.35);G.lineTo(cx+hs*.15,cy+hs*.05);G.lineTo(cx+hs*.45,cy+hs*.3);G.stroke();G.restore();},
+   ev:[[.2,()=>SFX.charge(1)],[1.5,()=>{SFX.impact();shake(24);}]]},
+  // 11 — the anvil, side on: two more blows, and the storm jumps out of him
+  {d:1.9,flat:[[.34,.38,'w'],[.38,.42,'b'],[1.2,1.24,'b'],[1.24,1.28,'w']],flatThr:10,draw(X,G,u,t){const W=V.W,H=V.H,ax=W*.5,ay=H*.7,s=H/300;
+     vsky(X,[[0,'#1a0c06'],[1,'#3a1a0a']],0,H);glowAt(G,W*.15,H*.6,H*.6,'#ff7a22',.45);X.fillStyle=INK;X.fillRect(0,H*.92,W,H*.1);
+     anvilSide(X,ax,ay,s);X.save();X.translate(ax+H*.2,ay-34*s);X.rotate(-PI/2);X.scale(s*.8,s*.8);drawBody(X,D.ch,D.P.hurtH,1,t,{plant:0,nosim:1});X.restore();
+     const blow=b=>{const k=seg01(t,b-.3,b),back=seg01(t,b,b+.35);return E.i(k)*(1-E.o(back));},hv=Math.max(blow(.36),blow(1.22)),hy2=lerp(-H*.35,ay-34*s-H*.12,hv),hx2=ax-H*.05;
+     X.fillStyle=INK;X.fillRect(hx2-H*.09,hy2-H*.12,H*.18,H*.12);X.fillRect(hx2+H*.07,hy2-H*.075,W,H*.03);
+     const ch=[ax-H*.05,ay-34*s-H*.08];for(const b of[.36,1.22]){const e=seg01(t,b,b+.5);if(e>0&&e<1)for(let i=0;i<7;i++){const a=-PI+i/6*PI,sd=Math.floor(t*20)+i*5,L=H*(.25+.25*hash(sd))*E.o(e);zap(G,ch[0],ch[1],ch[0]+Math.cos(a)*L,ch[1]+Math.sin(a)*L*.7,STORMC,1.6*(1-e),sd);}}
+     if(rnd()<.5)pt({x:ch[0]+rnd(30,-30),y:ch[1],vx:rnd(300,-300),vy:-rnd(300,50),l:rnd(.4,.2),s:rnd(2,1),c:'#ffc060',t:'spark',g:900});},
+   ev:[[.36,()=>{SFX.impact();SFX.zap();shake(22);}],[1.22,()=>{SFX.impact();SFX.thunder();shake(28);}]]},
+  // 12 — from above: it goes home, down through the grates into the cage
+  {d:2.2,draw(X,G,u,t){const P=pcam({x:0,y:-1500,z:60,pitch:PI/2,yaw:-.3+u*.1,f:V.H*1.2}),st=E.o(seg01(u,.15,.7));forgeFloor(X,G,P,{storm:st,heat:[seg01(u,.55,.7),seg01(u,.65,.8),seg01(u,.75,.9)]});
+     PCUT=G;try{pbx(X,P,-170,170,-110,0,-70,70);}finally{PCUT=null;}topC(X,G,P,0,0,'lie',2.2,300,20);topC(X,G,P,-40,250,'stand',4,0,0);
+     const c=P(0,-110,0);if(c&&u<.8){for(let i=0;i<10;i++){const a=i/10*TAU+t,q=P(Math.cos(a)*300,0,Math.sin(a)*300);if(q)zap(G,c[0],c[1],q[0],q[1],STORMC,2*(1-u),Math.floor(t*18)+i*3);}}
+     for(let i=0;i<2;i++){const rr=seg01(u,.15+i*.15,.8+i*.15);if(c&&rr>0&&rr<1){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=(1-rr)*.8;G.strokeStyle=STORMC;G.lineWidth=(1-rr)*12+1;G.beginPath();G.arc(c[0],c[1],rr*V.H*.7,0,TAU);G.stroke();G.restore();}}},
+   ev:[[.2,()=>SFX.thunder()],[1.3,()=>SFX.boom(.8)]]},
+  // 13 — the fires come back, one after another
+  {d:3,draw(X,G,u,t){const W=V.W,H=V.H,heat=[E.o(seg01(u,.08,.25)),E.o(seg01(u,.2,.37)),E.o(seg01(u,.32,.49))];
+     forgeHall(X,G,t,{heat,storm:.8,smiths:[{x:.3,dir:1,pose:u<.55?'kneel':'stand'},{x:.7,dir:-1,pose:u<.6?'kneel':'stand'}]});
+     sil(X,G,A.ch,W*.14,H*1.12,H/215,{back:true,pose:'stand',noWeapon:1});},
+   sub:['goliath','Light the fires.'],subAt:1.2,ev:[[.25,()=>SFX.boom(.6)],[.6,()=>SFX.boom(.6)],[.95,()=>SFX.boom(.6)]]},
+  // 14 — the anvil: he is still there, and it is warm
+  {d:3.8,fout:.8,draw(X,G,u,t){const W=V.W,H=V.H,ax=W*.42,ay=H*.74,s=H/420;vsky(X,[[0,'#1a0c06'],[1,'#4a2410']],0,H);glowAt(G,W*.1,H*.55,H*.8,'#ff7a22',.55);glowAt(G,W*.9,H*.5,H*.6,'#ff7a22',.35);
+     X.fillStyle=INK;X.fillRect(0,H*.9,W,H*.12);anvilSide(X,ax,ay,s);X.save();X.translate(ax+H*.13,ay-34*s);X.rotate(-PI/2);X.scale(s*.8,s*.8);drawBody(X,D.ch,D.P.hurtH,1,t,{plant:0,nosim:1});X.restore();
+     sil(X,G,A.ch,W*.84,H*1.0,H/120,{pose:'stand',hot:.3});if(rnd()<.3)pt({x:rnd(W),y:H*.9,vx:rnd(20,-20),vy:-rnd(60,20),l:rnd(3,1.5),s:rnd(2,1),c:'#ffb050',t:'ember',g:-6});},
+   subs:[['bolt','...Is it warm in here again?',.5,2.4],['goliath','Yes.',2.7,3.6]]},
+  card2('THE STOLEN STORM','GOLIATH  ·  BOLT',col),
+ ]};};
+
+/* =======================================================================
+   HANA — Rin finishes Grim at the Last Gate.
+   Her sister left her the spear and walked through the Gate carrying the
+   hill's embers. The blossoms never stopped falling. Rin plants the spear,
+   and every petal that fell for nine years comes back to it.
+   ======================================================================= */
+const PINK='#ff9ac8';
+function petal(g,x,y,r,a,col,al){g.save();g.translate(x,y);g.rotate(a);g.globalAlpha=al;g.fillStyle=col;g.beginPath();g.ellipse(0,0,r,r*.55,0,0,TAU);g.fill();g.restore();}
+function petalPos(i,t){const W=V.W,H=V.H,sp=.05+hash(i*2.3)*.06;return[(((hash(i*3.1)*1.2-.1)*W+Math.sin(t*.9+i)*W*.02+t*W*.02)%(W*1.1)+W*1.1)%(W*1.1)-W*.05,((hash(i*5.7)+t*sp)%1.1)*H-H*.05];}
+function petalsAt(g,t,n,a,col){g.save();g.globalCompositeOperation='lighter';for(let i=0;i<n;i++){const p=petalPos(i,t);petal(g,p[0],p[1],V.H*(.005+hash(i)*.004),t*2+i,col||PINK,a*(.45+hash(i*9)*.55));}g.restore();}
+function blossomTree(X,G,x,y,s,a){X.fillStyle=INK;X.strokeStyle=INK;X.lineCap='round';
+  const br=(x0,y0,an,L,w,d,sd)=>{const x1=x0+Math.sin(an)*L,y1=y0-Math.cos(an)*L;X.lineWidth=w;X.beginPath();X.moveTo(x0,y0);X.quadraticCurveTo((x0+x1)/2+Math.cos(an)*L*.12,(y0+y1)/2,x1,y1);X.stroke();
+    if(d<=0){for(let k=0;k<3;k++){const cx=x1+(hash(sd+k)-.5)*L,cy=y1+(hash(sd*2+k)-.5)*L*.6;X.beginPath();X.ellipse(cx,cy,L*(.7+hash(sd+k*3)*.4),L*(.45+hash(sd*3+k)*.3),0,0,TAU);X.fill();glowAt(G,cx,cy-L*.3,L*1.1,PINK,.1*a);}return;}
+    br(x1,y1,an-.38-hash(sd)*.3,L*.74,w*.64,d-1,sd*1.7+1);br(x1,y1,an+.32+hash(sd+3)*.3,L*.76,w*.64,d-1,sd*2.3+2);if(hash(sd*5)>.45)br(x1,y1,an+(hash(sd*7)-.5)*.5,L*.62,w*.5,d-1,sd*3.1+5);};
+  br(x,y,-.06,130*s,30*s,4,1.3);}
+/* where the petals are on the ground around Grim: a blossom five petals wide */
+function roseP(i,n,R){const th=i/n*TAU,r=R*(.25+.75*Math.abs(Math.cos(2.5*th)))*(.85+hash(i*3.3)*.3);return[Math.cos(th)*r,Math.sin(th)*r];}
+MOVIES.hana=(A,D)=>{const col=A.ch.col,gc=D.ch.col,ctx={hero:A.ch,op:D.ch,stage:'grave'},GZ=2600;
+ const hanaCarry=(g,f)=>{const k=f.p[2],h=f.r&&f.r.hands;if(!h)return;const x=f.p[0]+(h[0][0]+h[1][0])/2*k,y=f.p[1]+(h[0][1]+h[1][1])/2*k-10*k;for(let i=0;i<7;i++)glowAt(g,x+Math.sin(gameT*2+i*2)*14*k,y-Math.abs(Math.cos(gameT*1.6+i))*18*k,k*16,PINK,.6);};
+ return{movie:1,title:null,dmg:99999,hits:1,impCol:col,shots:[
+  // 1 — flashback: Petal Hill, two sisters under the tree
+  pastify({d:3.4,draw(X,G,u,t){const W=V.W,H=V.H,hz=H*.74;skyBack(X,STAGES.blossom,hz);X.fillStyle=INK;X.beginPath();X.moveTo(0,hz+H*.05);X.quadraticCurveTo(W*.5,hz-H*.06,W,hz+H*.03);X.lineTo(W,H);X.lineTo(0,H);X.fill();
+     blossomTree(X,G,W*.74,hz-H*.03,H/560,1);sil(X,G,HANA,W*.47,hz-H*.015,H/420,{pose:'stand',look:-1,hot:.5});sil(X,G,A.ch,W*.4,hz-H*.01,H/420*.62,{pose:'loose',look:1,noWeapon:1,hot:.5});petalsAt(G,t,70,.9);},
+   sub:['rin','She said she would be back before the blossoms fell.'],subAt:.4,ev:[[.05,()=>SFX.pad([130.8,196,261.6],18,.035)],[.1,()=>SFX.wind(3)]]}),
+  // 2 — flashback: she leaves her the spear
+  pastify({d:3,draw(X,G,u,t){const W=V.W,H=V.H,hz=H*.86;skyBack(X,STAGES.blossom,hz);blossomTree(X,G,W*.9,hz,H/380,1);X.fillStyle=INK;X.fillRect(0,hz,W,H-hz);
+     sil(X,G,HANA,W*.56,hz,H/250,{pose:'stand',over:{L:[1.25,.75],R:[.2,.2]},look:-1,headDrop:3,hot:.5,noWeapon:1,rim:'#ffd0e4',rimDx:-1.2});sil(X,G,A.ch,W*.43,hz,H/250*.62,{pose:'stand',look:1,hot:.5,rim:'#ffd0e4',rimDx:1.2});petalsAt(G,t+3,50,.8);},
+   sub:['hana','Keep it for me. I will be right back.'],subAt:.4}),
+  // 3 — flashback: down the road of graves, carrying the hill's embers
+  pastify({d:3,draw(X,G,u,t){NARR.gate(X,G,u,t,{walkers:[HANA],wz:u=>lerp(700,1500,u),open:()=>.06,carry:hanaCarry,wpose:'palms'});petalsAt(G,t+7,40,.7);},
+   sub:['rin','The blossoms never stopped falling.'],subAt:.4}),
+  // 4 — flashback, at the Gate: it opens for her, and closes; its keeper watches
+  pastify({d:3,draw(X,G,u,t){NARR.gate(X,G,u,t,{cam:u=>({x:-60,y:-150,z:GZ-1500+u*80,pitch:-.06,f:V.H*1.1}),walkers:[HANA],wz:u=>lerp(GZ-520,GZ+120,E.io(seg01(u,0,.62))),wpose:'palms',carry:hanaCarry,
+       open:u=>u<.55?lerp(.04,.3,E.o(seg01(u,0,.3))):lerp(.3,0,E.io(seg01(u,.62,.92))),figs:P=>[{x:600,z:GZ-160,d:()=>pfig(X,G,P,D.ch,600,GZ-160,{pose:'stand',hot:.5,look:-1})}]});},
+   sub:['grim','She walked through. She chose.'],subAt:1,ev:[[2.2,()=>SFX.boom(.6)]]}),
+  // 5, 6 — present
+  Object.assign(bustShot([['grim','The Gate does not give back.']],ctx,0),{ev:[[.05,()=>SFX.pad([110,164.8,207.7],20,.04)]]}),
+  {d:2.4,draw(X,G,u,t){drawEyesClose(X,G,A.ch,1,{zoom:1+u*.07,brow:.35,reflect:(g,x,y,r)=>{for(let i=0;i<5;i++)petal(g,x+(hash(i)-.5)*r*1.4,y+(((hash(i*3)+t*.2)%1)-.5)*r*1.2,r*.12,t+i,PINK,.8);}});},
+   sub:['rin','Then I will take her back.'],subAt:.3},
+  // 7 — she plants the spear: every petal in the sky stops, then comes to it
+  {d:2.8,draw(X,G,u,t){const H=V.H,tf=1.0,ts=1.3;stageBack(X,G,'grave',{y:-560,z:1.15,haze:.1,hz:1.05});const P=pcam({x:0,y:-10,z:-110-u*25,pitch:-.45,f:H*.95});
+     PCUT=G;let f;try{f=pfig(X,G,P,A.ch,0,210,{pose:'stand',hot:.9,s:1/A.ch.h,rim:'#ffc0dc',rimDx:1.5});}finally{PCUT=null;}if(!f||!f.r)return;
+     const k=f.p[2]/A.ch.h,tip=[f.p[0]+f.r.hands[1][0]*k,f.p[1]+(f.r.head[1]-118*A.ch.h)*k];let got=0;
+     G.save();G.globalCompositeOperation='lighter';for(let i=0;i<170;i++){const p=petalPos(i,Math.min(t,tf)+11),q=t<ts?0:E.i(seg01(t,ts+hash(i)*.5,ts+.5+hash(i)*.8));if(q>=1){got++;continue;}
+       petal(G,lerp(p[0],tip[0],q),lerp(p[1],tip[1],q),H*(.006+hash(i)*.004)*(1-q*.5),t<tf?t*2+i:tf*2+i,PINK,.9);}G.restore();coreAt(G,tip[0],tip[1],H*(.01+got/170*.05),PINK,.3+got/170*.7);},
+   ev:[[.1,()=>SFX.land(.5)],[1.0,()=>SFX.heart()],[1.3,()=>SFX.rise(1.4)]]},
+  // 8 — from above: the petals come down around him in the shape of a blossom
+  {d:2.4,draw(X,G,u,t){const P=pcam({x:0,y:-2500+u*150,z:0,pitch:PI/2,yaw:u*.2,f:V.H*1.2});X.fillStyle='#07100b';X.fillRect(0,0,V.W,V.H);
+     pfill(X,P,[[-2000,0,-2000],[2000,0,-2000],[2000,0,2000],[-2000,0,2000]],'#12241a');
+     PCUT=G;try{for(let i=0;i<40;i++){const x=(hash(i*1.7)-.5)*2600,z=(hash(i*2.9)-.5)*2600;if(Math.hypot(x,z)<700)continue;pbx(X,P,x-26,x+26,-90,0,z-10,z+10);}}finally{PCUT=null;}
+     const n=320;G.save();G.globalCompositeOperation='lighter';for(let i=0;i<n;i++){const tg=roseP(i,n,620),q=E.o(seg01(u,hash(i)*.3,.45+hash(i)*.3)),sx=rot2(tg[0]*3.2,tg[1]*3.2,1.4),x=lerp(sx[0],tg[0],q),z=lerp(sx[1],tg[1],q),p=P(x,-30,z);
+       if(p)petal(G,p[0],p[1],p[2]*16,t*2+i,PINK,.85);}G.restore();
+     topC(X,G,P,0,0,'stand',2.4,0,-900);const sc=P(0,0,0);if(sc){X.strokeStyle=INK;X.lineWidth=sc[2]*14;X.beginPath();X.arc(sc[0]+sc[2]*40,sc[1],sc[2]*90,-1.2,.6);X.stroke();}topC(X,G,P,0,-900,'stand',2.2,0,0);},
+   ev:[[.2,()=>SFX.wind(2.4)]]},
+  // 9 — against the moon: she goes up on the spear and turns over
+  {d:1.4,draw(X,G,u,t){const W=V.W,H=V.H;vsky(X,[[0,'#020604'],[1,'#0e2418']],0,H);const mx=W*.52,my=H*.44,mr=H*.33;glowAt(G,mx,my,mr*2.6,'#c8ffd0',.35);X.fillStyle='#dff5d8';X.beginPath();X.arc(mx,my,mr,0,TAU);X.fill();
+     const rt=lerp(-.2,PI*.92,E.io(seg01(u,.1,.9)));sil(X,G,A.ch,mx+Math.sin(u*2)*H*.05,my+H*.12-u*H*.05,H/560,{pose:'raise',rot:rt,hot:1});
+     G.save();G.globalCompositeOperation='lighter';for(let i=0;i<120;i++){const a=i/120*TAU*3+t*2,r=mr*(1.25+i/120*.8);petal(G,mx+Math.cos(a)*r,my+Math.sin(a)*r*.7,H*.006,a,PINK,.8);}G.restore();},
+   ev:[[.05,()=>SFX.dash()]]},
+  // 10 — straight down: the spear falls on him out of the sky
+  {d:1.6,flat:[[1.1,1.14,'a'],[1.14,1.18,'b']],flatThr:12,draw(X,G,u,t){const W=V.W,H=V.H,P=pcam({x:0,y:-2300,z:0,pitch:PI/2,yaw:.3,f:V.H*1.2});X.fillStyle='#07100b';X.fillRect(0,0,W,H);
+     pfill(X,P,[[-2000,0,-2000],[2000,0,-2000],[2000,0,2000],[-2000,0,2000]],'#12241a');const n=320;G.save();G.globalCompositeOperation='lighter';
+     for(let i=0;i<n;i++){const tg=roseP(i,n,620),p=P(tg[0],-30,tg[1]);if(p)petal(G,p[0],p[1],p[2]*16,i,PINK,.85);}G.restore();
+     topC(X,G,P,0,0,'stand',2.4,0,-900);const c=P(0,-160,0);if(c){const e=Math.sin(t*9)>0?1:.7;G.save();G.globalCompositeOperation='lighter';G.fillStyle=gc;G.globalAlpha=e;G.fillRect(c[0]-10,c[1]-3,6,3);G.fillRect(c[0]+4,c[1]-3,6,3);G.restore();}
+     const k=E.i(seg01(t,.1,1.1)),top=[W*.5,H*.02],tipx=lerp(top[0],c?c[0]:W/2,k),tipy=lerp(H*.26,c?c[1]:H/2,k);X.strokeStyle=INK;X.lineWidth=H*.012;X.beginPath();X.moveTo(W*.5,H*.2);X.lineTo(tipx,tipy);X.stroke();
+     G.save();G.globalCompositeOperation='lighter';G.strokeStyle=col;G.lineWidth=2;G.globalAlpha=.9;G.beginPath();G.moveTo(lerp(W*.5,tipx,.8),lerp(H*.2,tipy,.8));G.lineTo(tipx,tipy);G.stroke();G.restore();
+     X.save();X.translate(W*.5,H*.2);X.scale(H/140*(1.2-k*.4),H/140*(1.2-k*.4));figTop(X,'stand',0,0,1,PI);X.restore();},
+   ev:[[1.1,()=>{SFX.impact();SFX.slash(1.1);shake(26);}]]},
+  // 11 — at the Gate: pinned, and the Gate cracks open behind him
+  {d:3.2,draw(X,G,u,t){const H=V.H;NARR.gate(X,G,u,t,{cam:u=>({x:-140,y:-130,z:GZ-1350+u*40,pitch:-.05,f:V.H*1.1}),open:u=>.28*E.o(seg01(u,.15,.9)),
+       figs:P=>[{x:0,z:GZ-420,d:()=>{pfig(X,G,P,D.ch,0,GZ-420,{pose:'kneel',headDrop:8,noWeapon:1,hot:.2});const a=P(70,-330,GZ-560),b=P(10,0,GZ-430);if(a&&b){X.strokeStyle=INK;X.lineWidth=Math.max(2,a[2]*6);X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke();}}},
+         {x:-200,z:GZ-900,d:()=>pfig(X,G,P,A.ch,-200,GZ-900,{back:true,pose:'loose',noWeapon:1,rim:'#ffc0dc',rimDx:1.2})}]});
+     const P=pcam({x:-140,y:-130,z:GZ-1350+u*40,pitch:-.05,f:V.H*1.1}),gp=P(0,-400,GZ);if(gp){G.save();G.globalCompositeOperation='lighter';for(let i=0;i<90;i++){const q=seg01(u+hash(i)*.8,.2,1.2),p0=petalPos(i,t+20);petal(G,lerp(p0[0],gp[0],q),lerp(p0[1],gp[1],q),H*.006*(1-q*.6),t*2+i,PINK,.8*(1-q*.3));}G.restore();}},
+   sub:['grim','...It has been a long time since anyone was heavy enough.'],subAt:.5,ev:[[.4,()=>SFX.boom(.6)]]},
+  // 12 — out of the light, someone walks
+  {d:3,draw(X,G,u,t){NARR.gate(X,G,u,t,{cam:u=>({x:0,y:-140,z:GZ-1100,pitch:-.06,f:V.H*1.15}),open:u=>lerp(.35,.7,E.o(u)),walkers:[HANA],facing:1,bob:1,wz:u=>lerp(GZ+80,GZ-380,E.o(u)),wpose:'loose'});petalsAt(G,t+30,50,.7);},
+   sub:['hana','...Rin? You kept it.'],subAt:1.2},
+  // 13 — the two of them
+  {d:3.8,fout:.9,draw(X,G,u,t){NARR.gate(X,G,u,t,{cam:u=>({x:-30,y:-150,z:GZ-1300+u*40,pitch:-.03,f:V.H*1.1}),open:()=>.75,
+       figs:P=>[{x:-95,z:GZ-1090,d:()=>pfig(X,G,P,A.ch,-95,GZ-1090,{back:true,pose:'loose',rim:'#ffc0dc',rimDx:1.2})},{x:60,z:GZ-980,d:()=>pfig(X,G,P,HANA,60,GZ-980,{pose:'loose',look:-1,hot:.6,rim:'#e8fff0',rimDx:-1.2})}]});petalsAt(G,t+40,60,.8);},
+   subs:[['hana','You got so tall.',.4,1.9],['rin','...Come home.',2.2,3.5]],ev:[[.1,()=>SFX.pad([146.8,196,246.9],5,.04)]]},
+  card2('HANA','RIN  ·  GRIM',col),
+ ]};};
+
+/* =======================================================================
+   THE ONE WHO RETURNED — Grim finishes Ashen at Ashfield.
+   Ashen came to the Gate still burning, was weighed, and walked back out
+   before the scales settled. Grim brings the scales to him: his ember on
+   one side, the forty thousand of Ashfield on the other.
+   ======================================================================= */
+/* great scales, front on; returns the two pan positions */
+function drawScales(X,G,cx,by,s,tilt,o){o=o||{};const px=cx,py=by-330*s,L=260*s,ends=[-1,1].map(d=>[px+Math.cos(tilt)*L*d,py+Math.sin(tilt)*L*d]),drop=o.drop||[0,0],pans=ends.map((e,i)=>[e[0],e[1]+170*s+drop[i]]);
+  const draw=c=>{c.fillStyle=INK;c.strokeStyle=INK;c.fillRect(cx-60*s,by-20*s,120*s,20*s);c.fillRect(cx-40*s,by-40*s,80*s,20*s);c.fillRect(cx-9*s,py,18*s,by-40*s-py);
+    c.beginPath();c.moveTo(px,py-70*s);c.lineTo(px+12*s,py-50*s);c.lineTo(px,py-30*s);c.lineTo(px-12*s,py-50*s);c.fill();
+    c.save();c.translate(px,py);c.rotate(tilt);c.fillRect(-L,-5*s,L*2,10*s);for(const d of[-1,1]){c.beginPath();c.arc(d*L,0,9*s,0,TAU);c.fill();}c.fillRect(-3*s,-62*s,6*s,62*s);c.restore();
+    c.beginPath();c.arc(px,py,15*s,0,TAU);c.fill();
+    ends.forEach((e,i)=>{if(o.cut&&o.cut>0){const k=1-o.cut;c.lineWidth=3*s;c.beginPath();c.moveTo(e[0],e[1]);c.lineTo(e[0],e[1]+170*s*k*.5);c.stroke();}
+      else{c.lineWidth=3*s;for(let j=0;j<3;j++){c.beginPath();c.moveTo(e[0],e[1]);c.lineTo(pans[i][0]+(j-1)*52*s,pans[i][1]-4*s);c.stroke();}}
+      const p=pans[i];c.beginPath();c.moveTo(p[0]-62*s,p[1]-6*s);c.quadraticCurveTo(p[0],p[1]+40*s,p[0]+62*s,p[1]-6*s);c.closePath();c.fill();});};
+  draw(X);G.save();G.globalCompositeOperation='destination-out';draw(G);G.restore();return pans;}
+MOVIES.oneReturned=(A,D)=>{const gc=A.ch.col,red=D.ch.col,ctx={hero:A.ch,op:D.ch,stage:'dusk'},GZ=2600;
+ const burning=(g,f)=>{const k=f.p[2],h=f.r&&f.r.head;if(!h)return;for(const dx of[-18,0,18]){flame(null,g,f.p[0]+dx*k,f.p[1]+(h[1]+40)*k,k*15,EMBER,gameT+dx,.85);}
+   if(rnd()<.5)pt({x:f.p[0]+rnd(20,-20)*k,y:f.p[1]+h[1]*k,vx:rnd(30,-30),vy:-rnd(80,20),l:rnd(1.2,.5),s:rnd(2.5,1),c:EMBER,t:'ember',g:-20});};
+ const emberUp=(g,x,y,r,a)=>coreAt(g,x,y,r,red,a);
+ return{movie:1,title:null,dmg:99999,hits:1,impCol:gc,shots:[
+  // 1 — flashback: he came to the Gate still burning
+  pastify({d:3.2,draw(X,G,u,t){NARR.gate(X,G,u,t,{walkers:[D.ch],wz:u=>lerp(650,1350,u),open:()=>.08,carry:burning});},
+   sub:['grim','He came to my Gate still burning.'],subAt:.4,ev:[[.05,()=>SFX.pad([73.4,110,146.8],18,.04)],[.1,()=>SFX.wind(3)]]}),
+  // 2 — flashback, at the Gate: the scales would not settle
+  pastify({d:3.2,draw(X,G,u,t){const cam={x:60,y:-120,z:GZ-1150+u*50,pitch:-.03,f:V.H*1.1};
+     NARR.gate(X,G,u,t,{cam:()=>cam,open:()=>.14,lite:'#e8fff0',figs:P=>[
+       {x:-330,z:GZ-520,d:()=>{const q=P(-330,0,GZ-520);if(!q)return;const pans=drawScales(X,G,q[0],q[1],q[2]*.55,.3*Math.sin(t*2.6),{});emberUp(G,pans[0][0],pans[0][1]-q[2]*8,q[2]*9,1);}},
+       {x:-40,z:GZ-640,d:()=>pfig(X,G,P,D.ch,-40,GZ-640,{pose:'kneel',headDrop:5,noWeapon:1,hot:.3,rim:'#c8ffd8',rimDx:1.2})},
+       {x:230,z:GZ-560,d:()=>pfig(X,G,P,A.ch,230,GZ-560,{pose:'stand',look:-1,hot:.6,rim:'#c8ffd8',rimDx:-1.2})}]});},
+   sub:['grim','I weighed him. The scales would not settle.'],subAt:.4}),
+  // 3 — flashback, behind the keeper: the general walks back out
+  pastify({d:3,draw(X,G,u,t){NARR.gate(X,G,u,t,{cam:u=>({x:130,y:-170,z:GZ-160,yaw:PI,pitch:-.03,f:V.H*1.1}),walkers:[D.ch],wx:-60,wz:u=>lerp(GZ-700,GZ-1500,u),open:()=>0,
+       carry:(g,f)=>{const k=f.p[2],h=f.r&&f.r.chest;if(h)coreAt(g,f.p[0]+h[0]*k,f.p[1]+h[1]*k,k*8,red,.9);},
+       figs:P=>[{x:250,z:GZ-440,d:()=>pfig(X,G,P,A.ch,250,GZ-440,{back:true,pose:'stand',rim:'#c8ffb8',rimDx:-1.2})}]});},
+   sub:['grim','He stood up. He walked back out.'],subAt:.4}),
+  // 4, 5, 6
+  pastify(eyesShot([['grim','No one walks out.']])),
+  Object.assign(bustShot([['ashen','I had a debt to collect.']],ctx,2),{ev:[[.05,()=>SFX.pad([65.4,98,130.8,155.6],20,.04)]]}),
+  lowShot([['grim','So have I.']],ctx),
+  // 7 — the scythe comes around him, and hooks the ember out of his chest
+  {d:1.8,flat:[[.8,.84,'w'],[.84,.88,'b']],flatThr:40,draw(X,G,u,t){const W=V.W,H=V.H;stageBack(X,G,'dusk',{x:-120,y:-200,z:2.2,haze:.12});
+     drawBust(X,G,D.ch,W*.4,1,{zoom:1.6,hy:.3,rim:'#ffb070',rimDx:1.6,hot:.4});
+     const ch=[W*.42,H*.74],pull=E.io(seg01(u,.52,1)),k=E.o(seg01(u,.08,.44)),tip=[lerp(W*1.08,ch[0]+H*.02,k)+pull*W*.32,lerp(H*.9,ch[1],k)-pull*H*.18];
+     const bl=c=>{c.fillStyle=INK;c.beginPath();c.moveTo(tip[0],tip[1]);c.quadraticCurveTo(tip[0]+W*.06,tip[1]-H*.55,tip[0]+W*.5,tip[1]-H*.6);c.lineTo(tip[0]+W*.52,tip[1]-H*.53);c.quadraticCurveTo(tip[0]+W*.13,tip[1]-H*.45,tip[0],tip[1]);c.fill();};
+     bl(X);G.save();G.globalCompositeOperation='destination-out';bl(G);G.restore();
+     G.save();G.globalCompositeOperation='lighter';G.strokeStyle=gc;G.lineWidth=2.5;G.globalAlpha=.9;G.beginPath();G.moveTo(tip[0],tip[1]);G.quadraticCurveTo(tip[0]+W*.13,tip[1]-H*.45,tip[0]+W*.52,tip[1]-H*.53);G.stroke();G.restore();
+     if(u>.44){for(let i=0;i<6;i++){G.save();G.globalCompositeOperation='lighter';G.strokeStyle=red;G.globalAlpha=.6*(1-pull*.6);G.lineWidth=1.4;G.beginPath();G.moveTo(ch[0],ch[1]);G.quadraticCurveTo(lerp(ch[0],tip[0],.5),lerp(ch[1],tip[1],.5)+(hash(i)-.5)*H*.12,tip[0],tip[1]);G.stroke();G.restore();}
+       coreAt(G,tip[0],tip[1],H*.03,red,1);}},
+   ev:[[.1,()=>SFX.swing(.8)],[.8,()=>{SFX.slash(.8);SFX.impact();shake(20);}],[1,()=>SFX.heart()]]},
+  // 8 — low: the scales climb out of the field behind him
+  {d:2.6,draw(X,G,u,t){const W=V.W,H=V.H,hz=H*.86,rise=E.o(seg01(u,.05,.7));skyBack(X,STAGES.dusk,hz);X.fillStyle=INK;X.fillRect(0,hz,W,H-hz);
+     drawScales(X,G,W*.64,hz+H*.02+(1-rise)*H*.95,H/600,Math.sin(t*1.7)*.06,{});if(u<.75&&rnd()<.7)pt({x:W*.64+rnd(H*.3,-H*.3),y:hz,vx:rnd(90,-90),vy:-rnd(300,80),l:rnd(1,.4),s:rnd(6,2),c:'#000',t:'dust',g:500});
+     const r=sil(X,G,A.ch,W*.28,H*1.02,H/290,{pose:'raise',over:{L:[2.6,.3],R:[.3,.3]},hot:.8,rim:'#c8ffb8',rimDx:1.3});emberUp(G,r.hands[0][0]+(108-2)*A.ch.h*r.s,r.head[1]-30*A.ch.h*r.s,H*.02,1);},
+   ev:[[.1,()=>SFX.boom(1.2)],[.1,()=>shake(10)]]},
+  // 9 — his ember on one side; the forty thousand come up out of the field for the other
+  {d:3.2,draw(X,G,u,t,S){const W=V.W,H=V.H,hz=H*.9;skyBack(X,STAGES.dusk,hz);X.fillStyle=INK;X.fillRect(0,hz,W,H-hz);
+     const tl=u<.35?-.34*E.o(seg01(u,.1,.3)):lerp(-.34,.12,E.io(seg01(u,.35,.85)))+Math.sin(t*6)*.03*seg01(u,.4,.8),pans=drawScales(X,G,W*.5,hz+H*.02,H/560,tl,{});
+     const e0=u<.1?[W*.3,lerp(-H*.1,pans[0][1],E.i(seg01(u,0,.1)))]:[pans[0][0],pans[0][1]-H*.015];emberUp(G,e0[0],e0[1],H*.018,1);
+     const got=seg01(u,.4,.85);coreAt(G,pans[1][0],pans[1][1]-H*.015,H*(.005+got*.03),EMBER,got);
+     G.save();G.globalCompositeOperation='lighter';for(let i=0;i<90;i++){const k=seg01(u,.33+hash(i)*.3,.55+hash(i)*.3);if(k<=0||k>=1)continue;const sx=W*hash(i*3.7),sy=hz+H*.05,x=lerp(sx,pans[1][0],E.io(k)),y=lerp(sy,pans[1][1],E.io(k))-Math.sin(k*PI)*H*.15;
+       G.globalAlpha=.9;G.drawImage(glowSprite(EMBER,1),x-5,y-5,10,10);G.globalAlpha=.4;G.drawImage(glowSprite(EMBER),x-14,y-14,28,28);}G.restore();},
+   sub:['grim','Your ember, general. And all of theirs.'],subAt:.4,ev:[[.1,()=>SFX.land(.5)],[1.1,()=>SFX.rise(1.6)]]},
+  // 10 — close on the pivot: it swings, and swings, and settles
+  {d:2.4,draw(X,G,u,t){const W=V.W,H=V.H,s=H/150,tl=.26*Math.exp(-3.2*u)*Math.cos(u*16);stageBack(X,G,'dusk',{y:-420,z:1.4,haze:.14});drawScales(X,G,W*.5,H*.52+330*s,s,tl,{});},
+   sub:['grim','Now it settles.'],subAt:1.2,ev:[[.2,()=>SFX.block()],[1.9,()=>SFX.bell()]]},
+  // 11 — one cut: the chains part and everything falls
+  {d:1.6,flat:[[.35,.39,'w'],[.39,.43,'b']],flatThr:40,draw(X,G,u,t){const W=V.W,H=V.H,hz=H*.9,c=t>.37,fall=c?Math.pow(t-.37,2)*H*1.6:0;skyBack(X,STAGES.dusk,hz);X.fillStyle=INK;X.fillRect(0,hz,W,H-hz);
+     const pans=drawScales(X,G,W*.5,hz+H*.02,H/560,0,{cut:c?1:0,drop:[fall,fall*1.1]});emberUp(G,pans[0][0],pans[0][1]-H*.015,H*.018,1);coreAt(G,pans[1][0],pans[1][1]-H*.015,H*.035,EMBER,1);
+     const sl=seg01(t,.3,.37),fade=1-seg01(t,.4,1.2);if(sl>0&&fade>0){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=fade;for(const[lw,cc]of[[18,gc],[5,'#ffffff']]){G.strokeStyle=cc;G.lineWidth=lw*fade;G.beginPath();G.moveTo(W*1.05,-H*.05);G.lineTo(lerp(W*1.05,-W*.05,sl),lerp(-H*.05,H*.95,sl));G.stroke();}G.restore();}},
+   ev:[[.35,()=>{SFX.slash(1.2);SFX.impact();shake(26);}]]},
+  // 12 — from above: he lies in the field, and all of them rise out of it
+  {d:3,draw(X,G,u,t){const P=pcam({x:0,y:-2400,z:0,pitch:PI/2,yaw:.2+u*.1,f:V.H*1.2});X.fillStyle='#160a08';X.fillRect(0,0,V.W,V.H);
+     pfill(X,P,[[-2400,0,-2400],[2400,0,-2400],[2400,0,2400],[-2400,0,2400]],'#3a2216');pglow(X,P,0,0,1500,'#ff6a2a',.12);ashField(X,P,110);topC(X,G,P,0,0,'lie',2.4,-60,-300);
+     G.save();G.globalCompositeOperation='lighter';for(let i=0;i<260;i++){const st=hash(i*4.3)*.5,k=seg01(u,st,st+.5+hash(i)*.3);if(k<=0)continue;const x=(hash(i*1.1)-.5)*3000,z=(hash(i*2.2)-.5)*3000,p=P(x,-k*2200,z);if(!p)continue;
+       const r=Math.min(40,p[2]*18);G.globalAlpha=.8*(1-k*.4);G.drawImage(glowSprite(EMBER),p[0]-r*2,p[1]-r*2,r*4,r*4);G.globalAlpha=1;G.drawImage(glowSprite(EMBER,1),p[0]-r*.4,p[1]-r*.4,r*.8,r*.8);}G.restore();},
+   sub:['ashen','...It is quiet now.'],subAt:.8,ev:[[.1,()=>SFX.choir([110,164.8,220],6,.04)]]},
+  // 13 — the keeper walks home with one more ember
+  {d:3.2,fout:1,draw(X,G,u,t){NARR.gate(X,G,u,t,{walkers:[A.ch],wz:u=>lerp(700,1150,u),open:()=>.16,carry:(g,f)=>{const k=f.p[2],h=f.r&&f.r.hands;if(h)coreAt(g,f.p[0]+h[1][0]*k+8*k,f.p[1]+h[1][1]*k,k*7,red,.95);}});},
+   sub:['grim','It always is, after.'],subAt:.5},
+  card2('THE ONE WHO RETURNED','GRIM  ·  ASHEN',gc),
+ ]};};
+
+/* ---------------- where each rivalry is settled ---------------- */
+RIVALS.push(
+ {a:'ashen',d:'vex',stage:'dusk',movie:'gatesAshfield',name:'THE GATES OF ASHFIELD',hint:'Win the deciding round against Vex with CRIMSON REQUIEM, at Ashfield.'},
+ {a:'goliath',d:'bolt',stage:'forge',movie:'stolenStorm',name:'THE STOLEN STORM',hint:'Win the deciding round against Bolt with FORGEFALL, at the Crucible.'},
+ {a:'rin',d:'grim',stage:'grave',movie:'hana',name:'HANA',hint:'Win the deciding round against Grim with THOUSAND PETALS, at the Last Gate.'},
+ {a:'grim',d:'ashen',stage:'dusk',movie:'oneReturned',name:'THE ONE WHO RETURNED',hint:'Win the deciding round against Ashen with THE LAST GATE, at Ashfield.'});
 
 /* =======================================================================
    MAIN — input, match flow, scenes, loop.

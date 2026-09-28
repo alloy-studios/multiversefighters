@@ -86,14 +86,23 @@ Gate opens for one shadow at a time, and its keeper decides which.
 
 ### Rival finishers
 
-Some rivalries end in a long cinematic instead of the normal ultimate. It runs
-for about 40 seconds and has subtitles, a score, and shots from every angle:
-bird's-eye, worm's-eye, over the shoulder and extreme close-up. Flashbacks are
-graded to sepia, with only the light keeping its colour.
+Each rivalry ends in its own film of about 40 seconds instead of the normal
+ultimate. It has subtitles, a score, and shots from every angle: bird's-eye,
+worm's-eye, over the shoulder and extreme close-up. Each one opens on a
+flashback graded to sepia, where only the light keeps its colour. Then comes an
+attack that exists only in that film, built out of the story.
 
-| Finisher | How to see it |
-|---|---|
-| **The Last Dawn** | As Sol, win the deciding round against Morrow with *Hundred Suns* on the High Temple stage. It works in Story, Versus CPU and Versus Player. |
+| Finisher | The attack | How to see it |
+|---|---|---|
+| **The Last Dawn** | The ghosts of the thirty-one monks kneel in a ring around Morrow, exactly as they knelt around the flame she stole. They stand, and Sol's open palm lands on her chest where her hand once closed on the fire. All thirty-one palms strike with it, and the Dawn Flame is torn out of her. | As Sol, finish Morrow with *Hundred Suns* at the High Temple |
+| **The Gates of Ashfield** | Ashen drives his blade into the field. The crack runs out and draws the walls of Ashfield around Vex in fire, and the gate rises behind him and closes with both of them inside. There is one cut in the dark, and then the walls fall outward. | As Ashen, finish Vex with *Crimson Requiem* at Ashfield |
+| **The Stolen Storm** | Goliath does not tear the storm out. He forges it out: he pins Bolt to the great anvil over the old cage and strikes three times, until the lightning goes back down through the grates and the furnaces light one after another. | As Goliath, finish Bolt with *Forgefall* at the Crucible |
+| **Hana** | Rin plants her sister's spear. Every petal that fell for nine years stops in the air and comes back to it, and lands around Grim in the shape of a blossom. She drops out of the moon onto him, and the Gate cracks open behind him. | As Rin, finish Grim with *Thousand Petals* at the Last Gate |
+| **The One Who Returned** | Grim hooks Ashen's ember out of his chest with the scythe. The scales climb out of the field: his ember goes on one side and the forty thousand of Ashfield on the other, until the beam finally settles. | As Grim, finish Ashen with *The Last Gate* at Ashfield |
+
+A finisher only plays on the ultimate that wins the deciding round. It works in
+Story, Versus CPU and Versus Player. Once you have seen one, you can watch it
+again from the Lore screen.
 
 The angles are drawn, not modelled. The sets are laid out with a pinhole
 camera the way a background painter rules vanishing lines. The characters are
