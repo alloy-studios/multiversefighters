@@ -1065,8 +1065,9 @@ function bakeLayer(st,L,rf){
 }
 function loadStage(id){
   const st=STAGES[id]||STAGES.dusk,rf=Math.min(3,V.k0*1.2);
-  if(STG&&STG.id===id&&STG.rf===rf)return STG;
-  STG={id,st,rf,layers:st.layers.map(L=>bakeLayer(st,L,rf)),wx:[],flash:0,bolt:null,nextBolt:3,t:0,
+  if(STG&&STG.id===id&&STG.rf===rf&&STG.k0===V.k0)return STG;
+  const keepT=STG&&STG.id===id?STG.t:0;
+  STG={id,st,rf,k0:V.k0,layers:st.layers.map(L=>bakeLayer(st,L,rf)),wx:[],flash:0,bolt:null,nextBolt:3,t:keepT,
     dust:mixC(st.haze,ST_INK,.55),stars:[]};
   if(st.stars)for(let i=0;i<120;i++)STG.stars.push([rnd(1),rnd(1)*.62,rnd(1.6,.4),rnd(TAU)]);
   seedWeather();
@@ -3010,10 +3011,10 @@ const MOVE_TEXT=[['L','LIGHT  x3','chain'],['H','HEAVY',''],['→ H','OVERHEAD',
 function specialNames(id){return{ashen:['CRIMSON CRESCENT','PHANTOM STEP','RISING MOON'],vex:['KUNAI','MOONSTEP','CRESCENT FLIP'],goliath:['QUAKE','JUGGERNAUT','SKYBREAKER'],
   sol:['RADIANT ORB','HUNDRED PALMS','RISING SUN'],morrow:['HEX ORB','THORN SNARE','WITCHWIND'],grim:['SOUL REAP','WRAITH GLIDE','GALLOWS'],bolt:['VOLT JAB','STORM RUSH','SKYFIST'],rin:['PETAL LANCE','PETAL RUSH','RISING BLOSSOM']}[id];}
 const ULT_NAMES={ashen:'CRIMSON REQUIEM',vex:'MOONLESS NIGHT',goliath:'FORGEFALL',sol:'HUNDRED SUNS',morrow:'HOLLOW MOON',grim:'THE LAST GATE',bolt:'STORMBREAKER',rin:'THOUSAND PETALS'};
-function drawMoveList(ch,x,y){const S=US(),sn=specialNames(ch.id);
+function drawMoveList(ch,x,y,o){const S=US(),sn=specialNames(ch.id);
   txt('MOVES',x,y,10,{w:600,track:2,c:ch.col});
   const rows=[['J','LIGHT  ·  PRESS 3 TIMES'],['K','HEAVY'],['→ + K','OVERHEAD'],['↓ + J','LOW'],['↓ + K','SWEEP'],['L',sn[0]],['→ + L',sn[1]],['← + L',sn[2]],['I','THROW'],['U',ULT_NAMES[ch.id]+'  ·  FULL METER'],['SHIFT / →→','DASH'],['HOLD ←','BLOCK  (↙ LOW)']];
-  rows.forEach((r,i)=>{txt(r[0],x,y+(20+i*17)*S,9.5,{w:700,c:'#fff'});txt(r[1],x+86*S,y+(20+i*17)*S,9.5,{w:400,track:1,c:i===9?ch.col:'#b8b8c4'});});}
+  const gy=o&&o.gap||15;rows.forEach((r,i)=>{txt(r[0],x,y+(18+i*gy)*S,9,{w:700,c:'#fff'});txt(r[1],x+86*S,y+(18+i*gy)*S,9,{w:400,track:1,c:i===9?ch.col:'#b8b8c4'});});}
 
 /* =======================================================================
    MAIN — input, match flow, scenes, loop.
@@ -3165,12 +3166,12 @@ function sceneSelect(rdt){
   X.setTransform(1,0,0,1,0,0);X.fillStyle='#060608';X.fillRect(0,0,W,H);G.setTransform(1,0,0,1,0,0);G.clearRect(0,0,W,H);
   const cur=ROSTER[PICK.c1],cur2=ROSTER[PICK.c2];
   // cards
-  const cw=Math.min(W/(n+1.2),150*S),chh=H*.5,x0=W/2-cw*n/2,y0=H*.14;PICK.cards=[];
+  const cw=Math.min(W/(n+1.2),150*S),chh=H*.44,x0=W/2-cw*n/2,y0=H*.12;PICK.cards=[];
   ROSTER.forEach((ch,i)=>{const x=x0+i*cw,on1=PICK.c1===i,on2=(pvp||PICK.step===1)&&PICK.c2===i;PICK.cards.push({x,y:y0,w:cw,h:chh,i});
     const g=X.createLinearGradient(0,y0,0,y0+chh);g.addColorStop(0,mixC(ch.col,'#000',.82));g.addColorStop(.75,mixC(ch.col,'#000',on1||on2?.35:.6));g.addColorStop(1,mixC(ch.col,'#000',.85));
     X.fillStyle=g;X.fillRect(x+2*S,y0,cw-4*S,chh);
-    X.save();X.beginPath();X.rect(x+2*S,y0,cw-4*S,chh);X.clip();const sc=chh/300;X.translate(x+cw*.45,y0+chh-14*S);X.scale(sc*(1),sc);G.setTransform(X.getTransform());
-    const pose=breathe({side:i},poseSet(ch).stance);drawBody(X,ch,pose,1,gameT,{g:G,plant:1,hot:on1||on2?1:0});X.restore();G.setTransform(1,0,0,1,0,0);
+    X.save();X.beginPath();X.rect(x+2*S,y0,cw-4*S,chh);X.clip();G.save();G.setTransform(1,0,0,1,0,0);G.beginPath();G.rect(x+2*S,y0,cw-4*S,chh);G.clip();const sc=chh/280;X.translate(x+cw*.45,y0+chh-14*S);X.scale(sc*(1),sc);G.setTransform(X.getTransform());
+    const pose=breathe({side:i},poseSet(ch).stance);drawBody(X,ch,pose,1,gameT,{g:G,plant:1,hot:on1||on2?1:0});X.restore();G.restore();G.setTransform(1,0,0,1,0,0);
     if(on1){X.fillStyle=ch.col;X.fillRect(x+2*S,y0+chh+6*S,cw-4*S,3*S);txt(pvp?'P1':'',x+6*S,y0+chh+22*S,9,{w:700,c:ch.col});}
     if(on2){X.fillStyle='#fff';X.fillRect(x+2*S,y0+chh+12*S,cw-4*S,2*S);txt(pvp?'P2':'CPU',x+cw-6*S,y0+chh+22*S,9,{w:700,al:'right',c:'#fff'});}
     txt(ch.name,x+cw/2,y0+18*S,10,{w:600,al:'center',track:2,c:on1||on2?'#fff':'#999'});});
@@ -3179,12 +3180,12 @@ function sceneSelect(rdt){
   const steps=GAME.mode==='cpu'?['CHOOSE YOUR SHADOW','CHOOSE YOUR OPPONENT','DIFFICULTY  ·  STAGE']:GAME.mode==='train'?['CHOOSE YOUR SHADOW','CHOOSE A TRAINING PARTNER','STAGE']:['CHOOSE YOUR SHADOWS','','STAGE'];
   txt(steps[PICK.step],W/2,H*.08,13,{w:500,al:'center',track:2,c:'#ddd'});
   // info panel
-  const info=PICK.step===1?cur2:cur;const iy=y0+chh+48*S;
+  const info=PICK.step===1?cur2:cur;const iy=y0+chh+40*S;
   txt(info.name,W*.1,iy+30*S,34,{w:200,track:1,c:'#fff'});txt(info.title.toUpperCase(),W*.1,iy+48*S,9.5,{w:600,track:2,c:info.col});
   txt(info.bio,W*.1,iy+70*S,11,{w:400,c:'#a8a8b4'});
   const stat=(l,v,y)=>{txt(l,W*.1,y,8.5,{w:600,track:2,c:'#888'});X.fillStyle='rgba(255,255,255,.1)';X.fillRect(W*.1+70*S,y-6*S,140*S,3*S);X.fillStyle=info.col;X.fillRect(W*.1+70*S,y-6*S,140*S*v,3*S);};
   stat('POWER',clamp((info.pow-.8)/.5,.1,1),iy+96*S);stat('SPEED',clamp((info.spd-.75)/.45,.1,1),iy+110*S);stat('HEALTH',clamp((info.hp-850)/400,.1,1),iy+124*S);
-  if(PICK.step<2)drawMoveList(info,W*.58,iy+10*S);
+  if(PICK.step<2)drawMoveList(info,W*.58,iy-4*S,{gap:14});
   else{const sid=PICK.stage<0?'AUTO':STAGES[STAGE_IDS[PICK.stage]].name,items=GAME.mode==='cpu'?['DIFFICULTY   ◀  '+AIL[GAME.diff].name+'  ▶','STAGE   ◀  '+sid+'  ▶','BEGIN']:['STAGE   ◀  '+sid+'  ▶','BEGIN'];
     menuItems(items,W*.58,iy+30*S,12,28,'left');}
   txt(PICK.step===2?'◀ ▶ CHANGE   ·   ENTER / J  CONFIRM   ·   ESC / K  BACK':pvp?'P1  A D + J      ·      P2  ← → + ,  (or NUMPAD 1)':'A D  CHOOSE   ·   ENTER / J  CONFIRM   ·   ESC / K  BACK',W/2,H-22*S,8.5,{w:500,al:'center',track:1,c:'#666'});
