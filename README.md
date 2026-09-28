@@ -52,14 +52,14 @@ exclamation text. Each fighter has one:
 
 | Fighter | | Weapon | Ultimate |
 |---|---|---|---|
-| **ASHEN** | The Crimson Revenant | odachi | *Crimson Requiem*: he vanishes, eight cuts hang in the air around you against a red moon, then all bloom at once |
+| **ASHEN** | The Crimson Revenant | odachi | *Crimson Requiem*: time stops and the world drains to grey while eight red cuts hang in the air around you, then colour floods back as they all bloom at once |
 | **VEX** | Blade of the Silent Moon | twin daggers | *Moonless Night*: the light dies until only her eyes remain, and each cut is lit for a single frame |
-| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he hauls you into a burning sky and drives you back through the ground |
-| **SOL** | The Last Monk | open hand | *Hundred Suns*: a storm of palms, a rising kick, and one strike from above the clouds |
-| **MORROW** | Witch of the Hollow Mire | hex staff | *Hollow Moon*: hands of shadow climb out of the ground and drag you into her sigil |
+| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he slams you skull-first into the floor, the cracks run molten, and fire bursts from every one of them |
+| **SOL** | The Last Monk | open hand | *Hundred Suns*: a storm of palms as light breaks out behind him, then a sun drawn between his hands carries you across the ground |
+| **MORROW** | Witch of the Hollow Mire | hex staff | *Hollow Grasp*: hands of shadow climb out of the swamp mist and drag you into her sigil |
 | **GRIM** | Keeper of the Last Gate | scythe | *The Last Gate*: a gate grows out of the earth and opens, and he reaps your shadow into it |
-| **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then he calls the storm down through one punch |
-| **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, then she dives out of a pink sun |
+| **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then lightning strikes his raised fist and he drives it straight through you |
+| **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, a whirlwind of petals pins you, and she dashes straight through it |
 
 Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
