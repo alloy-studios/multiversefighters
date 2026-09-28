@@ -18,6 +18,7 @@ generated shape by shape, and all audio is synthesized in the browser.
 
 | Mode | |
 |---|---|
+| **Paths** | Every special fighter has a path: four fights in a row, with a few lines before and after each one. The fights get harder as you go. Lose one and you can continue from it. |
 | **Versus CPU** | Pick your fighter and opponent, then a difficulty: Novice, Fighter, Master or Shadow. Best of three rounds, 99-second timer. |
 | **Versus Player** | Two players on one keyboard, or with gamepads. |
 | **Training** | A dummy that stands, crouches, blocks, jumps or fights back. Health regenerates, meter can be infinite, and the last combo is shown. |
@@ -41,6 +42,7 @@ generated shape by shape, and all audio is synthesized in the browser.
 - **Throws:** press `Throw` up close. Hold back to throw behind you. Press `Throw` as you're grabbed to break it.
 - **Cancels:** lights chain into each other, into heavies and into specials. Normals and specials cancel into your ultimate.
 - **Other keys:** `Esc` / `P` pauses and shows the full move list. `M` toggles sound.
+- **Path scenes:** `J` / `Enter` shows the next line and `Esc` skips the scene.
 - **Gamepad:** stick or d-pad to move, `A` jump, `X` light, `Y` heavy, `B` special, `RB` throw, `LB` dash, `RT` ultimate, `Start` pause.
 
 ## Ultimates
@@ -52,18 +54,77 @@ exclamation text. Each fighter has one:
 
 | Fighter | | Weapon | Ultimate |
 |---|---|---|---|
-| **ASHEN** | The Crimson Revenant | odachi | *Crimson Requiem*: he vanishes, eight cuts hang in the air around you against a red moon, then all bloom at once |
+| **ASHEN** | The Crimson Revenant | odachi | *Crimson Requiem*: time stops and the world drains to grey while eight red cuts hang in the air around you, then colour floods back as they all bloom at once |
 | **VEX** | Blade of the Silent Moon | twin daggers | *Moonless Night*: the light dies until only her eyes remain, and each cut is lit for a single frame |
-| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he hauls you into a burning sky and drives you back through the ground |
-| **SOL** | The Last Monk | open hand | *Hundred Suns*: a storm of palms, a rising kick, and one strike from above the clouds |
-| **MORROW** | Witch of the Hollow Mire | hex staff | *Hollow Moon*: hands of shadow climb out of the ground and drag you into her sigil |
+| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he slams you skull-first into the floor, the cracks run molten, and fire bursts from every one of them |
+| **SOL** | The Last Monk | open hand | *Hundred Suns*: a storm of palms as light breaks out behind him, then a sun drawn between his hands carries you across the ground |
+| **MORROW** | Witch of the Hollow Mire | hex staff | *Hollow Grasp*: hands of shadow climb out of the swamp mist and drag you into her sigil |
 | **GRIM** | Keeper of the Last Gate | scythe | *The Last Gate*: a gate grows out of the earth and opens, and he reaps your shadow into it |
-| **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then he calls the storm down through one punch |
-| **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, then she dives out of a pink sun |
+| **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then lightning strikes his raised fist and he drives it straight through you |
+| **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, a whirlwind of petals pins you, and she dashes straight through it |
+| **GOJO** | The Strongest *(limited time)* | none | *Hollow Purple*: the blindfold comes down, Blue forms in one hand and Red in the other, and he brings them together. What he lets go gouges a burning trench through the stage and goes off somewhere far out of sight. Below 35% health it becomes *Domain Expansion: Infinite Void* |
+| **GOKU** | Ultra Instinct *(limited time)* | open hand | *Kamehameha*: you swing at him again and again and never touch him. One palm into the gap, a flurry from every side, then he vanishes, reappears high above you, and drives you into the ground with a beam |
 
 Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
 grab-range hook and a ground eruption.
+
+## Special fighters
+
+Some fighters are not on the roster all the time.
+
+- **Limited time:** playable only while their event runs. The title screen and
+  the select screen show how long is left. Clear their path before the event
+  ends and they stay on your roster for good. After the event, they disappear
+  for anyone who didn't.
+- **Unlockable:** earned by playing, for example by winning matches, landing
+  ultimates, beating a difficulty or clearing a path. Until then they show on
+  the select screen as a locked card with the condition and your progress.
+  When you earn one, a notice pops up and they stay unlocked. There are none
+  yet; the first one is on the way.
+
+Progress is saved in your browser. To try every special fighter without
+saving anything, add `?unlock` to the address, e.g. `index.html?unlock`.
+
+### GOJO: The Strongest
+
+*Limited time: 26 September to 26 October 2026.* He fights with his hands in
+his pockets.
+
+| Input | Move |
+|---|---|
+| Light chain, overhead, low, sweep, air attacks | Kicks. The hands stay in the pockets. |
+| Heavy | A two-finger flick |
+| Special | *Blue*: an orb that drags you in and hits five times |
+| → + Special | *Red*: a blast that throws you across the stage |
+| ← + Special | *Infinity*: anything that touches him stops. A melee attacker freezes for a moment and he counters. Projectiles vanish. It doesn't stop ultimates. |
+| Ultimate | *Hollow Purple* |
+| Ultimate below 35% health | *Domain Expansion: Infinite Void* |
+
+**His path, *The Strongest, Visiting*:** a stranger in a blindfold walks out of
+the rain and picks four fights: Bolt, Vex, Goliath and Grim.
+
+### GOKU: Ultra Instinct
+
+*Limited time: 28 September to 8 November 2026.* A silver aura, and he never
+blocks.
+
+| Input | Move |
+|---|---|
+| Hold back | *Ultra Instinct*: instead of blocking, his body moves on its own. He sways back or ducks under the hit and leaves an afterimage where it was going. No chip damage, and the attacker gets nothing to cancel from. Projectiles fly on past. While you hold back with an attack coming, he weaves. Throws still catch him. |
+| Light chain, heavy, overhead, low, sweep, air attacks | Fast punches and kicks, with afterimages on the big ones |
+| Special | *Ki Blast*: one quick shot from an open palm |
+| → + Special | *Instant Transmission*: two fingers to his forehead, gone, and back behind you with a palm strike |
+| ← + Special | *Dragon Fist*: a rising punch, invincible on startup |
+| Ultimate | *Kamehameha* |
+
+**His path, *A Good Fight*:** something falls out of the sky over the
+monastery, and it wants a fight: Sol, Bolt, Goliath and Grim.
+
+The event dates are in `index.html`: search for `SPECIAL.gojo` or
+`SPECIAL.goku`. `from` is the first day and `to` is the day after the last
+(local dates). Events can overlap; the title screen lists every one that is
+on. Remove an entry to make that fighter permanent.
 
 ## Stages
 
@@ -87,6 +148,11 @@ wisps, grave mist, rain with lightning, or blossom petals.
 - **Cinematics:** the engine plays shot lists in *story time*, with speed
   ramps for slow motion, camera moves with roll, backdrop swaps, letterboxing
   and two-tone impact frames.
+  Shots can also be drawn by hand for their own camera angle. That is how the
+  path scenes, Gojo's ultimates and Goku's close-ups get angles other than side-on. The angles
+  are drawn, not modelled: sets are laid out with a pinhole camera the way a
+  background painter rules vanishing lines, and the characters are flat
+  drawings for each view, placed and scaled by depth.
 - **Audio:** WebAudio only. Filtered noise gives the swings and impacts,
   detuned partials the steel, and sub drops the weight. A convolution reverb
   and a quiet taiko pattern sit under the fight.
