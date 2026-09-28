@@ -193,6 +193,7 @@ const POSE={
  tumble: P({lean:-.8,ch:-.3,hd:-.5,aF:[-2.6,.4,0],aB:[-.5,.8,0],lF:[-.3,-1.0,0],lB:[.9,-.4,0],gF:1,gB:1,pt:.8}),
  down  : P({rot:-1.52,y:78,hd:.25,aF:[-2.7,.3,0],aB:[-3,.2,0],lF:[.2,-.3,0],lB:[.05,-.2,0],gF:1,gB:1,pt:.7}),
  kneel : SP({fx:[26,-30],y:44,lean:.45,hd:-.1,aF:[.4,.6,0],aB:[.9,1.0,0],gF:1}),
+ tuck  : P({y:-14,lean:.35,ch:.25,hd:.35,aF:[1.0,1.9,0],aB:[.8,2.0,0],lF:[2.1,-2.5,0],lB:[1.8,-2.4,0],pt:.8}),
  recover:P({y:-4,lean:.3,aF:[-1.2,.4,0],aB:[1.7,.5,0],lF:[1.0,-2.0,0],lB:[.4,-1.8,0],pt:.8}),
  thrown: P({rot:-2.4,y:10,lean:-.4,aF:[-2.8,.3,0],aB:[-2,.4,0],lF:[.6,-.4,0],lB:[-.4,-.8,0],gF:1,gB:1}),
  grab  : SP({fx:[26,-24],y:14,lean:.4,aF:[1.55,.25,0],aB:[1.35,.5,0],gF:1,gB:1}),
@@ -1258,7 +1259,7 @@ function doMove(f,key){
   const m=f.M[key];if(!m||!canAfford(f,m))return false;
   if(m.cls==='U'){f.meter-=100;}
   f.st='move';f.t=0;f.mk=key;f.mv=m;f.mt=0;f.done={};f.landed=0;f.rp=[0,0];f.ry=0;f.hitCount=0;f.armorUsed=0;
-  f.airAtk=m.air?1:f.airAtk;
+  f.airAtk=m.air?1:f.airAtk;f.flip=0;
   blendTo(f,m.bl===undefined?.045:m.bl);
   if(!m.air&&!m.keepV)f.vx=0;
   if(m.cls==='U')superFlash(f);
@@ -1471,7 +1472,7 @@ function updFighter(f,dt){
     f.vx=lerp(f.vx,(fw>0?WALKF*sp:fw<0?-WALKB*sp:0)*f.face,Math.min(1,dt*18));
     break;}
   case 'prejump':
-    if(f.t>=.065){f.st='air';f.t=0;f.ground=0;f.vy=-JV*(f.ch.id==='goliath'?.93:1);const d=f.jdir||fwdOf(f);f.vx=d*JX*f.ch.spd*f.face;blendTo(f,.06);dust(f.x,6,0,.7);SFX.jump&&SFX.jump();}
+    if(f.t>=.065){f.st='air';f.t=0;f.ground=0;f.vy=-JV*(f.ch.id==='goliath'?.93:1);const d=f.jdir||fwdOf(f);f.flip=f.ch.id==='goliath'?0:d;f.vx=d*JX*f.ch.spd*f.face;blendTo(f,.06);dust(f.x,6,0,.7);SFX.jump&&SFX.jump();}
     break;
   case 'air':{
     let e;
@@ -1520,7 +1521,7 @@ function onLand(f,v){
     f.bounced=0;setSt(f,'down',.05);f.downT=.55;f.inv=.6;f.vx*=.5;dust(f.x,8,0,1);SFX.land&&SFX.land(.7);return;}
   if(f.st==='move'&&f.mv.air){setSt(f,'land',.04);f.landT=.1;f.vx=0;dust(f.x,4,0,.6);return;}
   if(f.st==='move'&&f.mv.landEnd){return;}
-  if(f.st==='air'){setSt(f,'land',.04);f.landT=.06;f.vx=0;dust(f.x,5,0,.7);SFX.land&&SFX.land(.4);}
+  if(f.st==='air'){f.flip=0;setSt(f,'land',.04);f.landT=.06;f.vx=0;dust(f.x,5,0,.7);SFX.land&&SFX.land(.4);}
 }
 function updMove(f,dt){
   const m=f.mv,t0=f.mt;f.mt+=dt;const t=f.mt;
@@ -1579,7 +1580,9 @@ function targetPose(f,dt){
     if(Math.abs(f.vx)>20)return gaitPose(f,sgn(f.vx)*f.face,dt);
     return breathe(f,P.stance);}
   case 'prejump':return P.prejump;
-  case 'air':return f.vy<0?mixPose(P.jump,P.fall,clamp((f.vy+400)/800,0,1)):P.fall;
+  case 'air':{let p=f.vy<0?mixPose(P.jump,P.fall,clamp((f.vy+400)/800,0,1)):P.fall;
+    if(f.flip&&f.t<.68){const u=clamp((f.t-.04)/.6,0,1);p=mixPose(p,P.tuck,Math.sin(u*PI)*1.1>1?1:Math.sin(u*PI)*1.1);p.rot=E.io(u)*TAU*f.flip;}
+    return p;}
   case 'land':return P.land;
   case 'dash':return f.dashDir>0?P.dashF:P.dashB;
   case 'move':return clipPose(f.mv,Math.min(f.mt,f.mv.d),f);
@@ -2027,7 +2030,7 @@ function petalBurst(f,n){
 }
 /* short-lived callouts beside the health bars (COUNTER, BREAK, REVERSAL...) */
 const CALL=[];
-function fxText(txt,f){CALL.push({txt,side:f.side,t:0,col:f.ch.col});if(CALL.length>6)CALL.shift();}
+function fxText(txt,f){const o=CALL.find(c=>c.txt===txt&&c.side===f.side);if(o){o.t=0;return;}CALL.push({txt,side:f.side,t:0,col:f.ch.col});if(CALL.length>4)CALL.shift();}
 
 /* ---------------- projectiles ---------------- */
 function projCrescent(f){
@@ -2093,7 +2096,7 @@ function projThorns(f){
 }
 function projBeam(f){
   const col=f.ch.col,K=trailSeg(f);SFX.beam&&SFX.beam();
-  const p=spawnProj(f,{kind:'beam',v:2300,r:34,life:.5,noclash:1,h:{dmg:40,hs:1,cine:1,kb:0,cls:'U',stop:.12},
+  const p=spawnProj(f,{kind:'beam',v:2300,r:34,life:.5,noclash:1,h:{dmg:40,hs:1,cine:1,kb:0,cls:'U',stop:.12},seg:p=>[[p.own.x+10*p.dir,p.y,p.x,p.y,p.r]],
     draw(c,g,p){const x0=p.sx,x1=p.x,y=p.y;g.save();for(const[w,cc,al]of[[70,col,.25],[34,col,.7],[12,'#ffffff',1]]){g.globalAlpha=al*(1-p.t/.5);g.fillStyle=cc;g.fillRect(Math.min(x0,x1),y-w/2,Math.abs(x1-x0),w);}g.restore();}});
   p.x=K[1][0];p.y=K[1][1];p.sx=p.x;ring(p.x,p.y,col,6,90,.3,6);
 }
@@ -2272,15 +2275,18 @@ function shake(a){CAMX.tr=Math.min(1,CAMX.tr+a/22);}
 function camPunch(a){CAMX.punch=Math.min(.25,CAMX.punch+a);}
 function updCamFX(dt){CAMX.tr=Math.max(0,CAMX.tr-dt*1.7);CAMX.punch=Math.max(0,CAMX.punch-dt*.9);CAMX.seed+=dt;
   const s=CAMX.tr*CAMX.tr*16*V.k0;cam.shx=(hash(CAMX.seed*61)-.5)*2*s;cam.shy=(hash(CAMX.seed*37+5)-.5)*2*s;}
+/* the fight camera keeps its own state; effects (KO push-in, super flash) are layered on top of it */
+const FC={x:0,y:-200,z:1};
 function fightCam(dt,snap){
   const a=FTR[0],b=FTR[1],mid=(a.x+b.x)/2,sep=Math.abs(a.x-b.x),visW=V.W/V.k0;
   const tz=clamp(visW/(sep+340),1,1.3),kk=snap?1:1-Math.pow(.03,dt);
-  cam.z=lerp(cam.z,tz,kk);
-  const k=camK(),top=Math.min(a.y+a.ry,b.y+b.ry)-210;
+  FC.z=lerp(FC.z,tz,kk);
+  const k=V.k0*FC.z,top=Math.min(a.y+a.ry,b.y+b.ry)-210;
   let cy=-(V.H*.32)/k;const topS=V.H/2+(top-cy)*k;if(topS<V.H*.1)cy=top-(V.H*.1-V.H/2)/k;
-  cam.y=snap?cy:lerp(cam.y,cy,1-Math.pow(.02,dt));
+  FC.y=snap?cy:lerp(FC.y,cy,1-Math.pow(.02,dt));
   const hw=(V.W/2)/k;let cx=clamp(mid,-ARENA-70+hw,ARENA+70-hw);if(hw>ARENA+70)cx=0;
-  cam.x=snap?cx:lerp(cam.x,cx,1-Math.pow(.006,dt));cam.roll=lerp(cam.roll,0,kk);
+  FC.x=snap?cx:lerp(FC.x,cx,1-Math.pow(.006,dt));
+  cam.x=FC.x;cam.y=FC.y;cam.z=FC.z;cam.roll=snap?0:lerp(cam.roll,0,kk);
 }
 /* ---------------- transforms ---------------- */
 function screenXf(c){c.setTransform(1,0,0,1,cam.shx,cam.shy);if(cam.roll){c.translate(V.W/2,V.H/2);c.rotate(cam.roll);c.translate(-V.W/2,-V.H/2);}}
@@ -2296,7 +2302,7 @@ function drawFighter(f,dt,inkOver){
   const air=!f.ground||f.ry<-2||f.st==='air'||(f.st==='move'&&f.mv&&f.mv.air);
   const r=drawBody(X,f.ch,f.pose,1,gameT,{g:G,cloth:f.cloth,dt:hitstop>0?0:dt,vx:clamp(vx*f.face,-2500,2500),vy:clamp(vy,-2500,2500),plant:!air&&f.st!=='down'&&f.st!=='ko',hot:f.hot,sway:clamp(vx*f.face/600,-1,1),
     inkCol:inkOver,farCol:inkOver});
-  if(f.flash>0&&!inkOver){G.save();G.setTransform(X.getTransform());G.globalAlpha=Math.min(1,f.flash/.12)*.55;drawBody(G,f.ch,f.pose,1,gameT,{lite:1,nosim:1,cloth:f.cloth,inkCol:mixC(f.ch.col,'#ffffff',.6)});G.restore();}
+  if(f.flash>0&&!inkOver){G.save();G.setTransform(X.getTransform());G.globalAlpha=Math.min(1,f.flash/.12)*.2;drawBody(G,f.ch,f.pose,1,gameT,{lite:1,nosim:1,cloth:f.cloth,inkCol:opp(f).ch.col});G.restore();}
   X.restore();
   recordTrails(f,r.eyes);
 }
@@ -2682,12 +2688,12 @@ CUTS.morrow=(A,D)=>{const col=A.ch.col;
    enter(){CU.at(A,-160,0,1);CU.at(D,140,0,-1);A.pose=Q('caster',{fx:[34,-22],y:12,lean:.35,aF:[1.57,0,0],wa:1.62,aB:[-1,.5],gB:1});D.pose=D.P.hurtH;POST.letter=1;A.hot=1;},
    upd(u,t){D.shk=.05;D.y=-E.o(u)*40;CU.lerpCam([100,-120,2.0,0],[130,-140,2.6,-.05],E.io(u));if(rnd()<.6){const c=CU.chest(D);bolt(c[0]+rnd(60,-60),c[1]+rnd(80,-80),c[0]+rnd(60,-60),c[1]+rnd(80,-80),col,.5);}},
    ev:[[.05,()=>SFX.beam()]]},
-  {d:1.0,bg:bgDisc({col,x:140,y:-330,r:190,top:'#040008',mid:'#1c0830',bot:'#0a0314',ring:1,disc:'#efe0ff'}),noFront:1,
-   enter(S){CU.at(A,-160,0,1);A.pose=cast;S.h=[[40,-1,2.2],[240,1,2.4],[90,-1,2.9],[195,1,3.1],[140,1,2.0]];SFX.hex();},
+  {d:1.0,bg:bgDisc({col,x:140,y:-330,r:190,top:'#040008',mid:'#2a0c48',bot:'#8a4ab8',ring:1,disc:'#efe0ff'}),noFront:1,
+   enter(S){CU.at(A,-160,0,1);A.pose=cast;S.h=[[20,-1,2.8],[260,1,3.0],[80,-1,3.6],[205,1,3.8],[145,1,2.6]];SFX.hex();},
    upd(u,t,S){D.y=-40+Math.sin(t*6)*4;D.pose=D.P.hurtH;CU.cam(lerp(0,60,E.io(u)),-160,lerp(.95,1.1,u),0);S.hu=u;},
-   under(X){const S=CINE.S;for(let i=0;i<S.h.length;i++){const h=S.h[i],k=E.o(seg01(S.hu,i*.1,.45+i*.1));shadowHand(X,h[0],lerp(330,40-10*h[2],k),h[2],k,h[1]>0);}},
+   under(X){const S=CINE.S;for(let i=0;i<S.h.length;i++){const h=S.h[i],k=E.o(seg01(S.hu,i*.1,.45+i*.1));shadowHand(X,h[0],lerp(420,20-12*h[2],k),h[2],k,h[1]>0);}},
    ev:[[.3,()=>SFX.boom(.4)],[.55,()=>SFX.boom(.4)]]},
-  {d:.8,bg:bgDisc({col,x:140,y:-330,r:190,top:'#040008',mid:'#1c0830',bot:'#0a0314',ring:1,disc:'#efe0ff'}),noFront:1,
+  {d:.8,bg:bgDisc({col,x:140,y:-330,r:190,top:'#040008',mid:'#2a0c48',bot:'#8a4ab8',ring:1,disc:'#efe0ff'}),noFront:1,
    enter(S){A.pose=clench;SFX.grab();},
    upd(u,t,S){D.y=lerp(-40,30,E.i2(u));D.shk=.05;CU.cam(130,lerp(-150,-110,u),lerp(1.4,1.8,E.io(u)),lerp(0,.08,u));S.hu=1;S.dr=u;},
    under(X){const S=CINE.S;for(let i=0;i<S.h.length;i++){const h=S.h[i];shadowHand(X,lerp(h[0],140+(h[1]*24),S.dr*.75),40-10*h[2]+S.dr*60,h[2],1-S.dr*.7,h[1]>0);}},
@@ -3079,7 +3085,7 @@ function onKO(a,d,H){
   if(GAME.demo){GAME.fighting=false;later(2.2,()=>demoReset());GAME.slow=.3;later(.9,()=>GAME.slow=1);return;}
   if(GAME.mode==='train'){d.hp=1;return;}
   if(GAME.phase==='ko')return;
-  GAME.fighting=false;GAME.phase='ko';GAME.koT=0;GAME.koWin=a;GAME.koLose=d;
+  GAME.fighting=false;GAME.phase='ko';GAME.koT=0;GAME.koWin=a;GAME.koLose=d;CALL.length=0;
   d.downT=99;SFX.ko();shake(18);
   if(d.st==='down')setSt(d,'ko',.05);else if(d.ground&&d.st!=='ko'){d.st='hit';d.t=0;d.ground=0;d.y=-1;d.vy=-520;d.vx=(sgn(d.x-a.x)||a.face)*280;d.kd=1;d.mv=null;}
   if(!H||!H.fromCine){GAME.slow=.18;POST.imp={bg:'#ffffff',ink:'#000000'};setTimeout(()=>{POST.imp={bg:'#000000',ink:'#ffffff'};},50);setTimeout(()=>{POST.imp=null;},100);}
@@ -3129,8 +3135,8 @@ function stepFight(rdt){
   // turn keeps facing sane mid-throw etc.
   if(STG)updStage(dt);updCamFX(rdt);
   fightCam(rdt);
-  if(GAME.phase==='ko'&&GAME.koLose&&!GAME.demo){GAME.koT+=rdt;const L=GAME.koLose,k=1-Math.pow(.02,rdt),u=clamp(GAME.koT/.8,0,1)*clamp((2.4-GAME.koT)/.8,0,1);
-    cam.x=lerp(cam.x,lerp(cam.x,L.x,.6*u),k*3);cam.z=lerp(cam.z,cam.z*(1+.35*u),k*3);}
+  if(GAME.phase==='ko'&&GAME.koLose&&!GAME.demo){GAME.koT+=rdt;const L=GAME.koLose,u=E.io(clamp(GAME.koT/.7,0,1)*clamp((2.6-GAME.koT)/.8,0,1));
+    const z=FC.z*(1+.3*u),k=V.k0*z;cam.z=z;cam.x=lerp(FC.x,L.x,.55*u);cam.y=lerp(FC.y,-(V.H*.32)/k+(L.y+L.ry)*.5,u);}
   if(GAME.fighting&&GAME.mode!=='train'&&!GAME.demo){GAME.timer-=dt;if(GAME.timer<=0){GAME.timer=0;timeOver();}}
   renderWorld(hitstop>0?0:dt,FTR);
   if(!GAME.demo)drawHud();
