@@ -63,6 +63,7 @@ exclamation text. Each fighter has one:
 | **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then lightning strikes his raised fist and he drives it straight through you |
 | **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, a whirlwind of petals pins you, and she dashes straight through it |
 | **GOJO** | The Strongest *(limited time)* | none | *Hollow Purple*: the blindfold comes down, Blue forms in one hand and Red in the other, and he brings them together. What he lets go gouges a burning trench through the stage and goes off somewhere far out of sight. Below 35% health it becomes *Domain Expansion: Infinite Void* |
+| **GOKU** | Ultra Instinct *(limited time)* | open hand | *Kamehameha*: you swing at him again and again and never touch him. One palm into the gap, a flurry from every side, then he vanishes, reappears high above you, and drives you into the ground with a beam |
 
 Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
@@ -103,9 +104,27 @@ his pockets.
 **His path, *The Strongest, Visiting*:** a stranger in a blindfold walks out of
 the rain and picks four fights: Bolt, Vex, Goliath and Grim.
 
-The event dates are in `index.html`: search for `SPECIAL.gojo`. `from` is the
-first day and `to` is the day after the last (local dates). Remove the entry
-to make him a permanent fighter.
+### GOKU: Ultra Instinct
+
+*Limited time: 28 September to 8 November 2026.* A silver aura, and he never
+blocks.
+
+| Input | Move |
+|---|---|
+| Hold back | *Ultra Instinct*: instead of blocking, his body moves on its own. He sways back or ducks under the hit and leaves an afterimage where it was going. No chip damage, and the attacker gets nothing to cancel from. Projectiles fly on past. While you hold back with an attack coming, he weaves. Throws still catch him. |
+| Light chain, heavy, overhead, low, sweep, air attacks | Fast punches and kicks, with afterimages on the big ones |
+| Special | *Ki Blast*: one quick shot from an open palm |
+| → + Special | *Instant Transmission*: two fingers to his forehead, gone, and back behind you with a palm strike |
+| ← + Special | *Dragon Fist*: a rising punch, invincible on startup |
+| Ultimate | *Kamehameha* |
+
+**His path, *A Good Fight*:** something falls out of the sky over the
+monastery, and it wants a fight: Sol, Bolt, Goliath and Grim.
+
+The event dates are in `index.html`: search for `SPECIAL.gojo` or
+`SPECIAL.goku`. `from` is the first day and `to` is the day after the last
+(local dates). Events can overlap; the title screen lists every one that is
+on. Remove an entry to make that fighter permanent.
 
 ## Stages
 
@@ -130,7 +149,7 @@ wisps, grave mist, rain with lightning, or blossom petals.
   ramps for slow motion, camera moves with roll, backdrop swaps, letterboxing
   and two-tone impact frames.
   Shots can also be drawn by hand for their own camera angle. That is how the
-  path scenes and Gojo's ultimates get angles other than side-on. The angles
+  path scenes, Gojo's ultimates and Goku's close-ups get angles other than side-on. The angles
   are drawn, not modelled: sets are laid out with a pinhole camera the way a
   background painter rules vanishing lines, and the characters are flat
   drawings for each view, placed and scaled by depth.

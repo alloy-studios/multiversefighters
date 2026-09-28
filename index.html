@@ -393,6 +393,7 @@ function drawArm(c,A,far,shape){
   if(ch.flare){const d=dirA(A.A2),n=[-d[1],d[0]],b=lerp2(A.e,A.w,1);    // wide witch sleeve
     fp(c,cc=>{cc.moveTo(A.e[0]+n[0]*5*S,A.e[1]+n[1]*5*S);cc.quadraticCurveTo(b[0]+n[0]*12*S,b[1]+n[1]*12*S+6*S,b[0]+n[0]*14*S+d[0]*4*S,b[1]+n[1]*14*S+10*S);
       cc.lineTo(b[0]-n[0]*8*S,b[1]-n[1]*8*S+4*S);cc.lineTo(A.e[0]-n[0]*5*S,A.e[1]-n[1]*5*S);cc.closePath();},RS.col);}
+  if(ch.bands)fp(c,cc=>segPath(cc,lerp2(A.e,A.w,.7),lerp2(A.e,A.w,.97),5*S*g,5.3*S*g,5*S*g),RS.col);   // wristbands
   handPath(c,A.w,A.A3,shape,S*g*(bulk?1.35:1));
 }
 function headPath(c,r,fem){
@@ -487,6 +488,10 @@ function drawHeadgear(c,r){
     fp(c,cc=>{  // a crown of white spikes, blindfold or not
       const s=[[.95,-.1],[1.08,-.74],[.74,-.6],[.92,-1.42],[.47,-.98],[.58,-1.96],[.14,-1.12],[.06,-2.24],[-.25,-1.2],[-.44,-2.06],[-.62,-1.06],[-.98,-1.72],[-1.0,-.84],[-1.4,-1.12],[-1.12,-.42],[-1.2,-.06]];
       s.forEach((p,i)=>{const k=Math.max(0,-p[1]-.6)/1.6,x=(p[0]-sw*k*2)*r,y=p[1]*r;i?cc.lineTo(x,y):cc.moveTo(x,y);});cc.closePath();});}
+  if(ch.hair==='goku'){const sw=(RS.opt.sway||0)*.12;
+    fp(c,cc=>{  // bangs hanging over the brow, then big spikes swept up and back
+      const s=[[.92,.12],[1.18,.1],[.96,-.18],[1.28,-.44],[.8,-.64],[.66,-1.58],[.24,-1.0],[-.24,-2.0],[-.44,-.96],[-1.3,-1.76],[-.92,-.6],[-2.08,-.92],[-1.14,-.18],[-2.02,.24],[-1.1,.26],[-1.6,.88],[-.8,.56],[-.66,.62]];
+      s.forEach((p,i)=>{const k=Math.max(0,-p[0]-.6),x=(p[0]-sw*k)*r,y=(p[1]+sw*k*.25)*r;i?cc.lineTo(x,y):cc.moveTo(x,y);});cc.closePath();});}
   if(ch.blindfold&&!RS.opt.unveil)fp(c,cc=>{cc.rect(-1.08*r,-.16*r,2.22*r,.44*r);});
   if(ch.hat){                                   // witch hat: wide brim, tall crooked cone
     fp(c,cc=>{cc.ellipse(.05*r,-.62*r,1.9*r,.34*r,-.12,0,TAU);});
@@ -1397,6 +1402,7 @@ function applyHit(a,d,h,pt,proj){
   const H=Object.assign({},HD[h.cls||(a.mv&&a.mv.cls)||'L'],h);
   const fromX=proj?proj.x-proj.vx*.01:a.x,push=sgn(d.x-fromX)||a.face;
   if(H.lvl!=='unb'&&canBlockNow(d)&&holdAway(d,{x:fromX})&&!(H.lvl==='low'&&!d.in.d)&&!(H.lvl==='ovh'&&d.in.d)){
+    if(d.ch.dodge)return uiDodge(a,d,H,pt,proj,push);   // some fighters never block: they are just not there
     const chip=H.chip?Math.round(H.dmg*.12):0;d.hp=Math.max(d.hp>1?1:0,d.hp-chip);
     setSt(d,'block',.03);d.stun=H.bs;d.crouch=d.in.d?1:0;d.vx=push*H.kb*.9;
     if(!proj&&Math.abs(d.x)>ARENA-30)a.vx=-push*H.kb*.6;
@@ -1534,7 +1540,7 @@ function updFighter(f,dt){
     f.stun-=dt;
     if(f.ground){f.vx*=Math.pow(.004,dt);if(f.stun<=0){setSt(f,f.in.d&&ctl?'idle':'idle',.12);f.jug=0;}}
     break;
-  case 'block':f.stun-=dt;f.vx*=Math.pow(.003,dt);if(f.stun<=0)setSt(f,'idle',.08);break;
+  case 'block':f.stun-=dt;f.vx*=Math.pow(.003,dt);if(f.stun<=0)setSt(f,'idle',f.ch.dodge?.14:.08);break;
   case 'down':f.vx*=Math.pow(.0005,dt);f.inv=.2;if(f.t>=(f.downT||.55)&&GAME.fighting&&f.hp>0){setSt(f,'getup',.05);f.inv=.45;}break;
   case 'getup':f.inv=Math.max(f.inv,.05);if(f.t>=.42){setSt(f,'idle',.1);f.kd=0;f.jug=0;face();}break;
   case 'throw':updThrow(f,dt);break;
@@ -1544,7 +1550,7 @@ function updFighter(f,dt){
   }
   // ghosts for fast motion
   if(f.ghostT>0){f.ghostT-=dt;f.ghostAcc=(f.ghostAcc||0)+dt;if(f.ghostAcc>.028){f.ghostAcc=0;f.ghosts.push({pose:copyPose(f.pose),x:f.x,y:f.y+f.ry,face:f.face,t:0});}}
-  for(let i=f.ghosts.length-1;i>=0;i--){f.ghosts[i].t+=dt;if(f.ghosts[i].t>.26)f.ghosts.splice(i,1);}
+  for(let i=f.ghosts.length-1;i>=0;i--){f.ghosts[i].t+=dt;if(f.ghosts[i].t>(f.ghosts[i].l||.26))f.ghosts.splice(i,1);}
   // physics
   if(!f.ground||f.st==='air'){
     const g=f.st==='hit'?GRAV*.92:GRAV;f.vy+=g*dt;f.y+=f.vy*dt;
@@ -1614,8 +1620,8 @@ function targetPose(f,dt){
   case 'idle':{
     const threat=o&&(o.st==='move'&&o.mv.hits||PROJ.some(p=>p.own===o))&&Math.abs(o.x-f.x)<420;
     const guard=holdAway(f,o)&&threat;
-    if(f.crouch)return guard?P.crouchB:breathe(f,P.crouch);
-    if(guard)return P.block;
+    if(f.crouch)return guard?(f.ch.dodge?uiWeave(f,dt,1):P.crouchB):breathe(f,P.crouch);
+    if(guard)return f.ch.dodge?uiWeave(f,dt):P.block;
     if(Math.abs(f.vx)>20)return gaitPose(f,sgn(f.vx)*f.face,dt);
     return breathe(f,P.stance);}
   case 'prejump':return P.prejump;
@@ -1626,7 +1632,7 @@ function targetPose(f,dt){
   case 'dash':return f.dashDir>0?P.dashF:P.dashB;
   case 'move':return clipPose(f.mv,Math.min(f.mt,f.mv.d),f);
   case 'hit':if(!f.ground)return f.vy<0?P.tumble:mixPose(P.tumble,P.fall,.3);return f.hurt==='H'?P.hurtH:f.hurt==='L'?P.hurtL:P.hurtM;
-  case 'block':return f.crouch?P.crouchB:P.block;
+  case 'block':return f.ch.dodge?uiPose(f,dt):f.crouch?P.crouchB:P.block;
   case 'down':case 'ko':return P.down;
   case 'getup':{const u=f.t/.42;return u<.5?mixPose(P.down,P.recover,E.io(u/.5)):mixPose(P.recover,P.stance,E.o((u-.5)/.5));}
   case 'throw':return throwPose(f);
@@ -2350,6 +2356,7 @@ function drawFighter(f,dt,inkOver){
   const sh=f.shk>0?(hash(gameT*97+f.side)-.5)*7:0;
   X.save();X.translate(f.x+sh,f.y+f.ry);X.scale(f.face,1);
   if(f.alpha<1)X.globalAlpha=f.alpha;
+  if(f.ch.aura&&!inkOver)auraFX(f,dt,CINE&&f.auraK?f.auraK:1);
   const air=!f.ground||f.ry<-2||f.st==='air'||(f.st==='move'&&f.mv&&f.mv.air);
   const r=drawBody(X,f.ch,f.pose,1,gameT,{g:G,cloth:f.cloth,dt:hitstop>0?0:dt,vx:clamp(vx*f.face,-2500,2500),vy:clamp(vy,-2500,2500),plant:!air&&f.st!=='down'&&f.st!=='ko',hot:f.hot,sway:clamp(vx*f.face/600,-1,1),unveil:f.unveil,
     inkCol:inkOver,farCol:inkOver});
@@ -2358,15 +2365,15 @@ function drawFighter(f,dt,inkOver){
   X.restore();
   recordTrails(f,r.eyes);
 }
-function drawGhosts(f){
-  if(!f.ghosts.length)return;G.save();worldXf(G);const dk=mixC(f.ch.col,'#000000',.55);
-  for(const g of f.ghosts){const u=g.t/.26;G.save();G.translate(g.x,g.y);G.scale(g.face,1);G.globalAlpha=.13*(1-u);
-    drawBody(G,f.ch,g.pose,1,gameT,{lite:1,nosim:1,cloth:f.cloth,inkCol:dk});G.restore();}
+function drawGhosts(f,own){
+  if(!f.ghosts.length||(f.ch.aura&&!own))return;G.save();worldXf(G);const dk=mixC(f.ch.col,'#000000',.55);
+  for(const g of f.ghosts){const u=g.t/(g.l||.26);G.save();G.translate(g.x,g.y);G.scale(g.face,1);G.globalAlpha=(g.ui?.3:.13)*(1-u);
+    drawBody(G,f.ch,g.pose,1,gameT,{lite:1,nosim:1,cloth:f.cloth,inkCol:g.ui?'#8fa8d8':dk});G.restore();}
   G.restore();
 }
 function drawGhostsMain(f){
   if(!f.ghosts.length)return;
-  for(const g of f.ghosts){const u=g.t/.26;X.save();X.translate(g.x,g.y);X.scale(g.face,1);X.globalAlpha=.42*(1-u)*(1-u);
+  for(const g of f.ghosts){const u=g.t/(g.l||.26);X.save();X.translate(g.x,g.y);X.scale(g.face,1);X.globalAlpha=.42*(1-u)*(1-u);
     drawBody(X,f.ch,g.pose,1,gameT,{lite:1,nosim:1,cloth:f.cloth,inkCol:mixC(f.ch.col,INK,.8)});X.restore();}
 }
 function bloom(str){
@@ -2440,7 +2447,7 @@ function updCine(rdt){
   C.t+=dt;C.rt+=rdt;gameT+=dt;C.dt=dt;
   if(sh.ev)sh.ev.forEach((e,k)=>{if(!sh._ev.has(k)&&C.t>=e[0]){sh._ev.add(k);e[1](C.S,C);}});
   if(sh.upd)sh.upd(Math.min(1,C.t/sh.d),C.t,C.S,dt,C);
-  for(const f of cineActors()){for(let i=f.ghosts.length-1;i>=0;i--){f.ghosts[i].t+=dt;if(f.ghosts[i].t>.26)f.ghosts.splice(i,1);}
+  for(const f of cineActors()){for(let i=f.ghosts.length-1;i>=0;i--){f.ghosts[i].t+=dt;if(f.ghosts[i].t>(f.ghosts[i].l||.26))f.ghosts.splice(i,1);}
     if(f.ghostT>0){f.ghostT-=dt;f.ghostAcc=(f.ghostAcc||0)+dt;if(f.ghostAcc>.03){f.ghostAcc=0;f.ghosts.push({pose:copyPose(f.pose),x:f.x,y:f.y+f.ry,face:f.face,t:0});}}
     if(f.ctrail){const s=trailSeg(f,{seg:f.ctrail});pushTrail(f,s[0],s[1],gameT);}
     if(f.flash>0)f.flash-=dt;if(f.shk>0)f.shk-=dt;}
@@ -3096,6 +3103,7 @@ const ULT_NAMES={ashen:'CRIMSON REQUIEM',vex:'MOONLESS NIGHT',goliath:'FORGEFALL
 function drawMoveList(ch,x,y,o){const S=US(),sn=specialNames(ch.id);
   txt('MOVES',x,y,10,{w:600,track:2,c:ch.col});
   const rows=[['J','LIGHT  ·  PRESS 3 TIMES'],['K','HEAVY'],['→ + K','OVERHEAD'],['↓ + J','LOW'],['↓ + K','SWEEP'],['L',sn[0]],['→ + L',sn[1]],['← + L',sn[2]],['I','THROW'],['U',ULT_NAMES[ch.id]+'  ·  FULL METER'],['SHIFT / →→','DASH'],['HOLD ←','BLOCK  (↙ LOW)']];
+  if(ch.dodge)rows[rows.length-1]=['HOLD ←','DODGE, NEVER BLOCK  (↙ LOW)'];
   if(ULT_NOTE[ch.id])rows.splice(10,0,['',ULT_NOTE[ch.id]]);
   const gy=o&&o.gap||15;rows.forEach((r,i)=>{txt(r[0],x,y+(18+i*gy)*S,9,{w:700,c:'#fff'});txt(r[1],x+86*S,y+(18+i*gy)*S,9,{w:400,track:1,c:i===9||(i===10&&!r[0])?ch.col:'#b8b8c4'});});}
 
@@ -3178,6 +3186,7 @@ function figFront(c,g,ch,o){
     c.beginPath();c.arc(sx,sy+1,6.3*aw,0,TAU);c.fill();
     limb(c,[[sx,sy],lerp2([sx,sy],e,.45),e,lerp2(e,wr,.32),wr],[6*aw,5.1*aw,4*aw,(4.4+fl*1.5)*aw*bulk,(3+fl*5)*aw*bulk]);
     if(fl){c.beginPath();c.moveTo(e[0],e[1]);c.lineTo(wr[0]+s*12,wr[1]+14);c.lineTo(wr[0]-s*10,wr[1]+10);c.fill();}
+    if(ch.bands)limb(c,[lerp2(e,wr,.7),lerp2(e,wr,.97)],[5.4*aw,5.4*aw]);
     // the hand: a mitten along the forearm with a thumb on the inside; palms toward the camera for foreshortened pushes
     const d=[s*Math.sin(a2),Math.cos(a2)],L=Math.hypot(d[0],d[1])||1,dx=d[0]/L,dy=d[1]/L,hs=aw*bulk;
     if(P.fore){c.beginPath();c.ellipse(wr[0],wr[1]+1,5*hs,5.6*hs,0,0,TAU);c.fill();c.lineWidth=2.3*hs;for(let i=0;i<4;i++){const fx=wr[0]+(i-1.5)*2.4*hs;c.beginPath();c.moveTo(fx,wr[1]-2*hs);c.lineTo(fx*1+(i-1.5)*.6*hs,wr[1]-(8-Math.abs(i-1.5))*hs);c.stroke();}c.lineWidth=2.6*hs;c.beginPath();c.moveTo(wr[0]-s*3*hs,wr[1]+1*hs);c.lineTo(wr[0]-s*7*hs,wr[1]-2*hs);c.stroke();}
@@ -3208,6 +3217,10 @@ function figFront(c,g,ch,o){
   if(ch.hair==='gojo'){  // a crown of white spikes, blindfold or not
     c.beginPath();const n=14;for(let i=0;i<=n;i++){const u=i/n,a=-PI+.3+u*(PI-.6),rr=i%2?1.02:(1.5+.75*Math.sin(u*PI))*(1+.04*Math.sin(t*2+i));
         const x=Math.cos(a)*rr*hr,y=Math.sin(a)*rr*hr-hr*.18;i?c.lineTo(x,y):c.moveTo(x,y);}c.lineTo(hr*.92,-hr*.05);c.lineTo(-hr*.92,-hr*.05);c.closePath();c.fill();}
+  if(ch.hair==='goku'){  // spikes fanned out on every side, bangs down over the brow
+    c.beginPath();const s=[[-.92,.14],[-1.95,-.1],[-1.04,-.48],[-2.15,-1.0],[-.98,-.92],[-1.5,-1.86],[-.52,-1.18],[-.56,-2.2],[-.06,-1.24],[.3,-2.26],[.4,-1.18],[1.2,-2.0],[.9,-.96],[2.1,-1.16],[1.06,-.52],[1.96,-.06],[.92,.14],
+      [.8,-.34],[.52,-.02],[.3,-.4],[0,-.08],[-.3,-.42],[-.52,-.02],[-.8,-.34]];
+    s.forEach((p,i)=>{const x=p[0]*hr,y=p[1]*hr;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fill();}
   if(ch.blindfold&&bf>0){const by=hr*.08+(1-bf)*hr*1.35;c.fillRect(-hr*1.02,by-hr*.21,hr*2.04,hr*.42);
     if(!back)G2(q=>{q.globalAlpha=bf*(.45+hot*.35);q.drawImage(glowSprite(col),-hr*1.1,by-hr*.5,hr*2.2,hr);q.globalAlpha=bf*.9;q.fillStyle=mixC(col,'#ffffff',.45);q.fillRect(-hr*.9,by+hr*.17,hr*1.8,hr*.05);q.globalAlpha=1;});}
   if(ch.helm){ // a rounded war helm with cheek guards, horns sweeping out and up
@@ -3432,7 +3445,9 @@ function spec(ch){const sp=SPECIAL[ch.id];if(!sp)return{ok:1};
   return{ok:1};}
 const selectable=()=>ROSTER.filter(c=>!spec(c).hidden);
 const playable=()=>ROSTER.filter(c=>spec(c).ok);
-function liveEvent(){for(const id in SPECIAL){const c=chOf(id);if(c&&SPECIAL[id].kind==='limited'&&spec(c).live)return c;}return null;}
+/* every limited guest whose event is on right now (events can overlap) */
+function liveEvents(){const out=[];for(const id in SPECIAL){const c=chOf(id);if(c&&SPECIAL[id].kind==='limited'&&spec(c).live)out.push(c);}return out;}
+function liveEvent(){return liveEvents()[0]||null;}
 
 /* ---------------- toasts ---------------- */
 const TOASTS=[];
@@ -3984,6 +3999,299 @@ PATHS.gojo={hero:'gojo',kicker:'LIMITED TIME',title:'THE STRONGEST, VISITING',ch
   end:[['gojo','Not bad, shadows. Not bad at all.'],['gojo','I should get back before anyone notices I left.'],['gojo','Maybe I\'ll drop by again.','l']]};
 
 /* =======================================================================
+   GOKU — limited-time guest (Son Goku, from Dragon Ball Super), in his
+   Mastered Ultra Instinct form, drawn as a shadow: wild spiked hair, a gi
+   with a sash and wristbands, and a silver aura that never quite settles.
+   He does not block. When he would, his body moves out of the way on its
+   own and leaves an afterimage where the hit was going.
+   Specials: KI BLAST · INSTANT TRANSMISSION · DRAGON FIST.
+   Ultimate: KAMEHAMEHA.
+   ======================================================================= */
+const GOKU_SIL='#c2d4f2',GOKU_KI='#7fbcff',GOKU_AURA='#a9c6ff';
+ROSTER.push({id:'goku',name:'GOKU',title:'Ultra Instinct',col:GOKU_SIL,
+  h:1.02,w:1.06,hair:'goku',loose:1,sash:1,bands:1,aura:1,dodge:1,eyes:'calm',wep:'none',stance:'mui',move:'run',stage:'monastery',
+  hp:960,spd:1.14,pow:1.08,
+  bio:'His body moves before he thinks. He finds this very funny.'});
+SPECIAL.goku={kind:'limited',from:'2026-09-28',to:'2026-11-09',keep:1};
+SNAMES.goku=['KI BLAST','INSTANT TRANSMISSION','DRAGON FIST'];ULT_NAMES.goku='KAMEHAMEHA';
+PREF.goku=120;ZONER.goku=.3;LPOSE.goku='loose';
+
+/* ---------------- stance: upright and loose, front hand open ---------------- */
+SD.mui={fx:[18,-16],y:5,lean:.02,ch:0,hd:.02,aF:[.3,.9,0],aB:[.1,.7,0],gF:2,gB:2};STANCE.mui=SP(SD.mui);
+BLK.mui={};
+WIN.goku=SP({fx:[10,-12],y:3,lean:-.04,hd:.12,aF:[.06,.2,0],aB:[-.02,.25,0],gF:2,gB:2});
+
+/* ---------------- the dodge ----------------
+   Five ways out of the way, all with the hands low and loose:
+   0 sway back · 1 slip under · 2 step back · 3 lift the front leg over a low one · 4 low sway */
+const DG=[
+  Q('mui',{fx:[26,-14],y:8,lean:-.42,ch:-.16,hd:-.2,aF:[.28,.5,0],aB:[-.2,.45,0],gF:2,gB:2}),
+  Q('mui',{fx:[28,-22],y:26,lean:.62,ch:.2,hd:-.4,aF:[.25,.5,0],aB:[-.3,.4,0],gF:2,gB:2}),
+  Q('mui',{fx:[6,-36],y:14,lean:-.22,ch:-.08,hd:-.05,aF:[.45,.7,0],aB:[-.1,.4,0],gF:2,gB:2}),
+  Q('mui',{fx:[12,-22],y:10,lean:-.18,hd:-.05,aF:[.5,.8,0],aB:[-.2,.4,0],gF:2,gB:2,kF:[1.35,-2.0,0]}),
+  Q('mui',{fx:[26,-32],y:40,lean:-.05,ch:-.15,hd:-.1,aF:[.35,.6,0],aB:[-.2,.5,0],gF:2,gB:2}),
+];
+/* called from applyHit instead of a block: no chip, no pushback on the attacker, nothing for them to cancel from */
+function uiDodge(a,d,H,pt,proj,push){
+  const low=H.lvl==='low',crouch=!!d.in.d,hi=pt[1]<d.y-125;
+  d.ghosts.push({pose:copyPose(d.pose),x:d.x,y:d.y+d.ry,face:d.face,t:0,ui:1,l:.42});
+  d.dodgeN=(d.dodgeN||0)+1;const n=d.dodgeN;
+  d.dodgeV=crouch?(low?3:4):hi?(n%2?0:1):(n%2?1:0);
+  setSt(d,'block',.035);d.stun=Math.max(.14,H.bs*.8);d.crouch=crouch?1:0;d.t=0;
+  d.vx=push*Math.min(520,300+H.kb*.5);d.ghostT=.08;
+  d.meter=Math.min(100,d.meter+H.dmg*.1);a.meter=Math.min(100,a.meter+H.dmg*.03);
+  hitstop=Math.max(hitstop,.025);
+  uiWhiff(pt[0],pt[1],push);   // the way the hit was travelling
+  nz(.18,{f0:1400,f1:4200,q:.9,g:.07,a:.02});tn(.35,{w:'sine',f0:2350+hash(n)*500,f1:2600+hash(n)*500,g:.022,wet:1});
+  if(proj){proj.spent=1;return 0;}   // it flies on past him
+  return 2;
+}
+/* streaks of air where the hit went through */
+function uiWhiff(x,y,dir){
+  effs.push({t:0,l:.22,glow:1,d(c,p){c.save();c.globalCompositeOperation='lighter';c.lineCap='round';
+    for(let i=0;i<5;i++){const o=(i-2)*9+hash(i*3.3+x)*6,L=70+hash(i*7.1+y)*60,k=E.o(p),x0=x-dir*L*.6+dir*k*L*.9,al=(1-p)*(.5+hash(i)*.4);
+      c.globalAlpha=al;c.strokeStyle=i%2?'#ffffff':GOKU_AURA;c.lineWidth=1+hash(i*9)*1.4;c.beginPath();c.moveTo(x0,y+o);c.lineTo(x0+dir*L*(.4+k*.6),y+o);c.stroke();}
+    c.restore();}});
+  sparks(x,y,5,'#dfe8ff',260,dir>0?0:PI,.5,1.4,.22);
+}
+/* the pose while a dodge plays out: into it fast, then settling back */
+function uiPose(f,dt){const p=DG[f.dodgeV||0],k=clamp(f.t/Math.max(.1,f.stun+f.t),0,1);return mixPose(p,f.P.stance,E.i(clamp((k-.55)/.45,0,1))*.6);}
+/* holding back with something coming: the body already weaving, the way it does in the emote */
+function uiWeave(f,dt,low){const t=gameT*3.1+f.side*1.3,a=Math.sin(t),b=Math.sin(t*.5+1.1),P=f.P;
+  let p=low?mixPose(P.crouch,DG[4],.55+.3*a):mixPose(mixPose(DG[0],DG[2],.5+.5*b),P.stance,.35+.3*Math.abs(a));
+  if(!low&&b<-.7)p=mixPose(p,DG[1],(-b-.7)/.3*.5);
+  f.weaveT=(f.weaveT||0)+dt;if(f.weaveT>.11){f.weaveT=0;f.ghosts.push({pose:copyPose(p),x:f.x,y:f.y+f.ry,face:f.face,t:0,ui:1,l:.3});}
+  return p;}
+
+/* ---------------- the silver aura ----------------
+   the body drawn in light a few times, a little up and to the sides, flickering, then the body cut back out of it */
+function auraFX(f,dt,k){
+  drawGhosts(f,1);   // his afterimages go on the light layer here, so the cut below keeps them off his body
+  k=(k===undefined?1:k)*f.alpha;if(k<=0)return;const t=gameT,fl=.8+.2*Math.sin(t*23+f.side);
+  G.save();G.setTransform(X.getTransform());G.globalCompositeOperation='lighter';
+  G.globalAlpha=.1*k;G.drawImage(glowSprite(GOKU_AURA),-95*f.ch.w,-215*f.ch.h,190*f.ch.w,250*f.ch.h);
+  const o={lite:1,nosim:1,cloth:f.cloth,inkCol:GOKU_AURA};
+  for(const[dx,dy,al]of[[-2.6,-1.6,.22],[2.6,-1.6,.22],[0,-4.6-1.6*Math.sin(t*17),.2],[0,1.4,.12]]){G.save();G.translate(dx,dy);G.globalAlpha=al*k*fl;drawBody(G,f.ch,f.pose,1,t,o);G.restore();}
+  G.globalCompositeOperation='destination-out';G.globalAlpha=1;drawBody(G,f.ch,f.pose,1,t,{lite:1,nosim:1,cloth:f.cloth,inkCol:'#000'});
+  G.restore();
+  if(dt>0&&rnd()<dt*16*k)pt({x:f.x+rnd(44,-44)*f.ch.w,y:f.y+f.ry-rnd(175,15),vx:rnd(24,-24),vy:-rnd(170,60),l:rnd(.7,.35),s:rnd(2,.9),c:rnd()<.5?'#ffffff':GOKU_AURA,t:'spark',g:-60,dr:.5});
+}
+/* the same thing for a front-on figure, in figure units; the caller cuts the body back out (drawBust and sil both do) */
+function figAura(G,ch,t,a,fig){G.save();G.globalCompositeOperation='lighter';const f=Object.assign({},fig,{noGlow:1,ink:GOKU_AURA,t});
+  G.globalAlpha=.16*a;G.drawImage(glowSprite(GOKU_AURA),-80,-225,160,250);
+  for(const[dx,dy,al]of[[-.5,-.3,.2],[.5,-.3,.2],[0,-1.2-.5*Math.sin(t*17),.2],[-.35,.35,.1],[.35,.35,.1]]){G.save();G.translate(dx,dy);G.globalAlpha=al*a*(.8+.2*Math.sin(t*23+dx));figFront(G,null,ch,f);G.restore();}
+  // wisps rising off him
+  G.lineCap='round';for(let i=0;i<30;i++){const q=(t*(.9+hash(i)*.8)+hash(i*3.7))%1,x0=(hash(i*5.1)-.5)*70,y0=-40-q*170;
+    G.globalAlpha=a*Math.sin(q*PI)*.4;G.strokeStyle=i%3?GOKU_AURA:'#ffffff';G.lineWidth=.4+hash(i*7)*.4;G.beginPath();G.moveTo(x0,y0);G.lineTo(x0+Math.sin(t*3+i)*.8,y0-1.5-hash(i*2)*2.5);G.stroke();}
+  G.restore();}
+/* call before drawBust / sil with the same placement */
+function bustAura(G,ch,x,look,o,t,a){const H=V.H,z=o.zoom||1,sc=H/(118*ch.h)*z;G.save();G.translate(x,H*(o.hy||.36)+172/118*H*z);G.scale(sc,sc);
+  figAura(G,ch,t,a,Object.assign({pose:o.pose||'stand',look},o.fig||{}));G.restore();}
+function silAura(G,ch,x,y,sc,t,a,fig){const s=sc/ch.h;G.save();G.translate(x,y);G.scale(s,s);figAura(G,ch,t,a,fig||{});G.restore();}
+
+/* ---------------- moves ---------------- */
+{const s='mui',GP=o=>Q(s,o),GA=o=>Q('air',o),GC=o=>CR(s,o);
+ const itPose=GP({fx:[14,-16],y:4,lean:-.04,hd:.08,aF:[2.55,2.5,0],gF:2,aB:[.08,.3,0],gB:0});
+ MOVES.goku={
+ L1:{cls:'L',d:.2,k:[[0,'stance'],[.04,GP({lean:.04,aF:[.3,1.9,0],gF:0,aB:[.35,1.6]}),'o'],[.08,GP({fx:[34,-24],lean:.28,aF:[1.58,0,0],gF:0,aB:[.2,1.9]}),'s'],[.2,'stance','io']],
+   rm:[[0,0],[.08,12,0,'s'],[.2,14]],hits:[H_(.04,.1,{seg:'aF',dmg:26,hs:.26,kb:110,fx:'blunt'})],can:[.06,.18]},
+ L2:{cls:'L',d:.26,k:[[0,GP({fx:[34,-24],lean:.28,aF:[1.58,0,0],gF:0,aB:[.2,1.9]})],[.05,GP({lean:.02,aF:[.3,2.0,0],gF:0,aB:[-.3,1.8,0]}),'o'],
+   [.1,GP({fx:[38,-22],lean:.42,ch:.1,aB:[1.55,0,0],gB:0,aF:[.3,2.0,0],gF:0}),'s'],[.26,'stance','io']],
+   rm:[[0,0],[.1,14,0,'s'],[.26,16]],hits:[H_(.05,.12,{seg:'aB',dmg:30,hs:.28,kb:140,fx:'blunt'})],can:[.08,.24]},
+ L3:{cls:'L',d:.44,k:[[0,'stance'],[.1,GP({fx:[14,-8],y:16,lean:-.3,aF:[.9,1.6,0],gF:0,aB:[.6,1.9],kF:[1.0,-2.3,0]}),'o'],
+   [.16,GP({fx:[14,-4],y:10,lean:-.55,ch:-.2,aF:[-.6,.5,0],gF:0,aB:[-1.0,.5,0],kF:[2.1,-.02,0],pt:1}),'s'],[.28,GP({fx:[14,-4],y:12,lean:-.5,ch:-.15,aF:[-.55,.5,0],gF:0,aB:[-.95,.5,0],kF:[1.95,-.1,0],pt:1}),'o'],[.44,'stance','io']],
+   rm:[[0,0],[.16,20,0,'s'],[.44,24]],after:[.1,.2],hits:[H_(.11,.19,{seg:'lF',r:13,dmg:48,kb:290,hs:.42,fx:'blunt'})],can:[.14,.38]},
+ H:{cls:'H',d:.52,k:[[0,'stance'],[.12,GP({fx:[22,-30],y:22,lean:-.15,aF:[-.3,2.2,0],gF:0,aB:[.6,1.6]}),'o'],
+   [.18,GP({fx:[58,-30],y:26,lean:.6,ch:.12,aF:[1.58,0,0],gF:0,aB:[-.6,1.0]}),'s'],[.34,GP({fx:[58,-30],y:26,lean:.58,ch:.1,aF:[1.55,.05,0],gF:0,aB:[-.5,1.0]}),'o'],[.52,'stance','io']],
+   rm:[[0,0],[.12,-6],[.18,44,0,'s'],[.52,48]],after:[.1,.22],hits:[H_(.13,.21,{seg:'aF',r:16,dmg:82,kb:340,hs:.5,fx:'blunt'})],hot:[.1,.34],can:[.2,.44],
+   on:[[.17,f=>{const p=trailSeg(f)[1];ring(p[0],p[1],GOKU_SIL,10,90,.3,4,.3);}]]},
+ FH:{cls:'H',d:.6,k:[[0,'stance'],[.2,GP({fx:[14,-6],y:6,lean:-.35,ch:-.1,aF:[.9,1.5,0],aB:[-.6,1.0],kF:[3.0,-.05,0],pt:1}),'o'],
+   [.3,GP({fx:[16,-6],y:18,lean:.3,aF:[.4,1.4,0],aB:[-.5,1],kF:[1.05,-.1,0],pt:.6}),'i2'],[.4,GP({fx:[40,-10],y:30,lean:.4,aF:[.4,1.4,0],aB:[-.5,1]}),'o'],[.6,'stance','io']],
+   rm:[[0,0],[.2,10],[.3,30,0,'i2'],[.6,32]],hits:[H_(.22,.32,{seg:'lF',r:14,dmg:70,lvl:'ovh',kb:200,hs:.46,fx:'blunt'})],can:[.32,.5]},
+ cL:{cls:'L',d:.22,crouch:1,k:[[0,'crouch'],[.04,GC({aF:[.4,1.8,0],gF:0}),'o'],[.08,GC({fx:[36,-24],lean:.5,aF:[1.3,0,0],gF:0}),'s'],[.22,'crouch','io']],
+   rm:[[0,0],[.08,8,0,'s'],[.22,8]],hits:[H_(.04,.1,{seg:'aF',dmg:24,lvl:'low',hs:.22,kb:90,fx:'blunt'})],can:[.06,.2]},
+ cH:{cls:'H',d:.5,crouch:1,k:[[0,'crouch'],[.08,GC({y:52,lean:.5,aF:[.6,.5,0],aB:[.2,.6],kF:[.6,-2.0,0]}),'o'],
+   [.16,GP({fx:[20,-28],y:64,lean:.55,ch:.1,aF:[.35,.2,0],gF:2,aB:[-.3,.4],kF:[1.58,-.02,0],pt:1}),'s'],[.3,GP({fx:[20,-28],y:64,lean:.55,ch:.1,aF:[.35,.2,0],gF:2,aB:[-.3,.4],kF:[1.5,-.06,0],pt:1}),'o'],[.5,'crouch','io']],
+   rm:[[0,0],[.16,10,0,'s'],[.5,10]],after:[.08,.18],hits:[H_(.1,.25,{seg:'lF',r:13,dmg:64,lvl:'low',kd:1,kb:160,hs:.6,fx:'blunt'})],can:[.25,.4],on:[[.12,f=>dust(f.x+50*f.face,8,f.face,.8)]]},
+ jL:{cls:'L',air:1,d:.3,k:[[0,'jump'],[.05,GA({lF:[1.6,-2.6,0],lB:[.1,-.9,0],aF:[.5,1.8,0],aB:[-.6,.8]}),'o'],[.1,GA({lean:.2,lF:[1.95,-2.6,0],lB:[.1,-.9,0],aF:[.5,1.8,0],aB:[-.6,.8]}),'s'],[.3,GA({lF:[1.8,-2.5,0],lB:[.1,-.9,0],aF:[.5,1.8,0]}),'o']],
+   hits:[H_(.05,.16,{seg:'lF',r:14,dmg:36,lvl:'ovh',hs:.34,fx:'blunt'})],can:[.08,.3]},
+ jH:{cls:'H',air:1,d:.44,k:[[0,'jump'],[.1,GA({lean:-.25,aF:[3.0,.6,0],aB:[2.9,.7,0],gF:0,gB:0,lF:[.9,-1.6,0],lB:[.2,-1.0,0]}),'o'],
+   [.16,GA({lean:.35,aF:[1.25,.1,0],aB:[1.15,.2,0],gF:0,gB:0,lF:[.9,-1.6,0],lB:[.1,-1.0,0]}),'s'],[.44,GA({lean:.35,aF:[1.15,.15,0],aB:[1.05,.2,0],gF:0,gB:0,lF:[.9,-1.6,0],lB:[.1,-1.0,0]}),'o']],
+   hits:[H_(.12,.3,{seg:'aF',r:18,dmg:62,lvl:'ovh',hs:.46,spike:1,fx:'blunt'})],can:[.18,.44]},
+ // KI BLAST — one open palm, one quick shot
+ S:{cls:'S',d:.44,k:[[0,'stance'],[.08,GP({fx:[20,-24],y:12,lean:-.1,aF:[-.4,1.6,0],gF:1,aB:[.4,1.4]}),'o'],[.13,GP({fx:[38,-24],y:14,lean:.3,aF:[1.55,0,0],gF:1,aB:[-.3,1.0]}),'s'],
+   [.3,GP({fx:[38,-24],y:14,lean:.3,aF:[1.52,.05,0],gF:1,aB:[-.3,1.0]}),'l'],[.44,'stance','io']],rm:[[0,0],[.13,10,0,'s'],[.44,12]],hot:[.08,.3],on:[[.13,f=>kiBlast(f)]]},
+ // INSTANT TRANSMISSION — two fingers to the forehead, gone, and already behind you
+ FS:{cls:'S',d:.62,k:[[0,'stance'],[.08,itPose,'o'],[.22,itPose,'l'],[.3,GP({fx:[52,-28],y:24,lean:.55,ch:.1,aF:[1.6,.05,0],gF:1,aB:[-.4,1.0]}),'s'],
+   [.46,GP({fx:[52,-28],y:24,lean:.52,ch:.1,aF:[1.56,.08,0],gF:1,aB:[-.4,1.0]}),'o'],[.62,'stance','io']],
+   rm:[[0,0],[.28,0],[.32,22,0,'s'],[.62,26]],ghost:[.2,.28],inv:[.16,.32],thru:[.16,.36],hot:[.26,.46],
+   hits:[H_(.29,.38,{seg:'aF',r:18,dmg:76,kb:360,lift:300,kd:1,hs:.55,fx:'palm'})],on:[[.2,f=>itVanish(f)],[.27,f=>itAppear(f)]]},
+ // DRAGON FIST — a rising punch that goes through anything on the way up
+ BS:{cls:'S',d:.66,k:[[0,'stance'],[.05,GP({fx:[24,-24],y:36,lean:.35,aF:[.2,2.2,0],gF:0,aB:[-.3,1.2]}),'o'],
+   [.16,GA({lean:-.15,aF:[2.95,.1,0],gF:0,aB:[-.6,.9,0],lF:[1.3,-2.2,0],lB:[.1,-.8,0],pt:.9}),'s'],[.36,GA({lean:-.1,aF:[2.9,.15,0],gF:0,aB:[-.5,.9,0],lF:[1.1,-1.9,0],lB:[.2,-.9,0],pt:.9}),'l'],
+   [.56,GP({y:30,lean:.3}),'i'],[.66,'stance','io']],
+   rm:[[0,0,0],[.05,0,0],[.16,26,-150,'s'],[.36,22,-140,'l'],[.56,18,0,'i'],[.66,18,0]],inv:[0,.14],hot:[.05,.4],after:[.05,.3],
+   hits:[H_(.06,.24,{seg:'aF',r:18,dmg:90,lift:1000,kd:'launch',hs:.8,kb:90,fx:'blunt'})],on:[[.08,f=>dragonFX(f)]]},
+ U:{cls:'U',d:.56,k:[[0,'stance'],[.1,GP({fx:[20,-34],y:26,lean:-.1,aF:[-.3,2.0,0],gF:1,aB:[.5,1.4]}),'o'],[.18,GP({fx:[56,-34],y:28,lean:.55,aF:[1.55,0,0],gF:1,aB:[-.4,1.0]}),'s'],[.56,'stance','io']],
+   rm:[[0,0],[.1,0],[.18,150,0,'s'],[.56,152]],after:[.08,.22],inv:[.06,.2],
+   hits:[H_(.1,.24,{seg:'aF',r:26,dmg:40,cine:1,hs:1,kb:0})]},
+ };}
+
+/* ---------------- specials ---------------- */
+function kiOrb(g,x,y,R,dir,a){if(R<=.5||a<=0)return;g.save();g.globalCompositeOperation='lighter';
+  if(dir){const L=R*5,gr=g.createLinearGradient(x,y,x-dir*L,y);gr.addColorStop(0,rgba(GOKU_KI,.7*a));gr.addColorStop(1,rgba(GOKU_KI,0));g.fillStyle=gr;
+    g.beginPath();g.moveTo(x,y-R*.55);g.quadraticCurveTo(x-dir*L*.4,y-R*.25,x-dir*L,y);g.quadraticCurveTo(x-dir*L*.4,y+R*.25,x,y+R*.55);g.fill();}
+  g.globalAlpha=.6*a;g.drawImage(glowSprite(GOKU_KI),x-R*2.6,y-R*2.6,R*5.2,R*5.2);
+  g.globalAlpha=a;g.drawImage(glowSprite('#bfe0ff',1),x-R,y-R,R*2,R*2);g.fillStyle='#f4faff';g.beginPath();g.arc(x,y,R*.42,0,TAU);g.fill();g.restore();}
+function kiBlast(f){const K=trailSeg(f);SFX.boom&&SFX.boom(.3);tn(.25,{w:'sine',f0:900,f1:300,g:.06,wet:1});
+  const p=spawnProj(f,{kind:'ki',v:980,r:20,life:1.1,h:{dmg:52,hs:.42,bs:.26,kb:220,stop:.08,cls:'S',chip:1,fx:'palm'},
+    upd(p,dt){if(rnd()<dt*40)pt({x:p.x-p.dir*8,y:p.y+rnd(8,-8),vx:-p.dir*rnd(120,30),vy:rnd(40,-40),l:rnd(.3,.15),s:rnd(2,1),c:rnd()<.5?GOKU_KI:'#ffffff',t:'spark',g:0});},
+    die(p){ring(p.x,p.y,GOKU_KI,6,50,.22,3);},
+    draw(c,g,p){kiOrb(g,p.x,p.y,16+Math.sin(p.t*40),p.dir,1);}});
+  p.x=K[1][0]+18*f.face;p.y=K[1][1];ring(p.x,p.y,GOKU_KI,4,40,.2,3);}
+/* a thin column of light where he was, and where he is */
+function itFlash(x,y){effs.push({t:0,l:.26,glow:1,d(c,p){c.save();c.globalCompositeOperation='lighter';const a=(1-p)*.65,w=9*(1-p*.7);
+    const gr=c.createLinearGradient(x-w,0,x+w,0);gr.addColorStop(0,'rgba(200,220,255,0)');gr.addColorStop(.5,rgba('#ffffff',.9*a));gr.addColorStop(1,'rgba(200,220,255,0)');c.fillStyle=gr;c.fillRect(x-w,y-230,w*2,250);
+    c.globalAlpha=a*.5;c.drawImage(glowSprite(GOKU_AURA),x-70,y-190,140,200);c.restore();}});}
+function itVanish(f){f.ghosts.push({pose:copyPose(f.pose),x:f.x,y:f.y+f.ry,face:f.face,t:0,ui:1,l:.3});itFlash(f.x,f.y);
+  nz(.12,{type:'highpass',f0:4200,g:.12});tn(.18,{w:'sine',f0:1800,f1:600,g:.05,wet:1});}
+function itAppear(f){const o=opp(f),s=Math.sign(o.x-f.x)||f.face;f.x=clamp(o.x+s*78,-ARENA,ARENA);f.face=-s;f.lx=f.x;itFlash(f.x,f.y);
+  tn(.16,{w:'sine',f0:600,f1:1900,g:.05,wet:1});}
+function dragonFX(f){const x=f.x+26*f.face;SFX.boom&&SFX.boom(.4);
+  effs.push({t:0,l:.5,glow:1,d(c,p){c.save();c.globalCompositeOperation='lighter';c.lineCap='round';const a=1-p;
+    for(let i=0;i<3;i++){c.globalAlpha=a*(.7-i*.2);c.strokeStyle=i?GOKU_AURA:'#ffffff';c.lineWidth=(9-i*3)*a+1;c.beginPath();
+      for(let k=0;k<=24;k++){const u=k/24,yy=-u*300*E.o(Math.min(1,p*3)),xx=x+Math.sin(u*9-p*12+i*2)*(18+u*14)*f.face;k?c.lineTo(xx,yy):c.moveTo(xx,yy);}c.stroke();}
+    c.restore();}});
+  dust(f.x,10,0,1.1);}
+
+/* ---------------- ultimate: KAMEHAMEHA ---------------- */
+CUTS.goku=(A,D)=>kameCut(A,D);
+/* the ball of light between his hands */
+function kameBall(g,x,y,R,t,a){if(R<=.5||a<=0)return;g.save();g.globalCompositeOperation='lighter';
+  g.globalAlpha=.55*a;g.drawImage(glowSprite(GOKU_KI),x-R*3.2,y-R*3.2,R*6.4,R*6.4);
+  g.globalAlpha=a;g.drawImage(glowSprite('#bfe0ff',1),x-R*1.2,y-R*1.2,R*2.4,R*2.4);
+  for(let i=0;i<3;i++){const q=(t*2.6+i/3)%1;g.globalAlpha=a*(1-q)*.7;g.strokeStyle='#dff0ff';g.lineWidth=Math.max(1,R*.08*(1-q));g.beginPath();g.arc(x,y,R*(1.6-q*1.1),0,TAU);g.stroke();}
+  g.fillStyle='#ffffff';g.globalAlpha=a;g.beginPath();g.arc(x,y,R*.5,0,TAU);g.fill();
+  g.lineCap='round';for(let i=0;i<14;i++){const an=hash(i*3.1)*TAU+t*(2+hash(i)*3),r0=R*(2.4+hash(i*7)*1.4),q=(t*1.8+hash(i*5))%1,r=r0*(1-q)+R*.6*q;
+    g.globalAlpha=a*q*.8;g.strokeStyle=i%2?'#dff0ff':GOKU_KI;g.lineWidth=1+q*1.5;g.beginPath();g.moveTo(x+Math.cos(an)*r,y+Math.sin(an)*r);g.lineTo(x+Math.cos(an)*(r+R*.5),y+Math.sin(an)*(r+R*.5));g.stroke();}
+  g.restore();}
+/* the beam: a white core in a blue sheath, wobbling, with rings running down it */
+function kameBeam(g,x0,y0,x1,y1,W,t,a){if(a<=0||W<=.5)return;const L=Math.hypot(x1-x0,y1-y0),an=Math.atan2(y1-y0,x1-x0);
+  g.save();g.translate(x0,y0);g.rotate(an);g.globalCompositeOperation='lighter';
+  const wob=k=>1+.06*Math.sin(t*60+k*.05)+.04*Math.sin(t*37-k*.11);
+  const band=(w,col,al)=>{g.globalAlpha=al*a;g.fillStyle=col;g.beginPath();g.moveTo(0,-w*.6);for(let k=0;k<=24;k++){const x=k/24*L;g.lineTo(x,-w*wob(x));}for(let k=24;k>=0;k--){const x=k/24*L;g.lineTo(x,w*wob(x+40));}g.closePath();g.fill();};
+  band(W*1.9,rgba(GOKU_KI,.25),1);band(W*1.2,GOKU_KI,.6);band(W*.7,'#cfe6ff',.8);band(W*.32,'#ffffff',1);
+  for(let i=0;i<7;i++){const q=(t*3.2+i/7)%1,x=q*L;g.globalAlpha=a*.55*(1-Math.abs(q-.5)*1.4);g.strokeStyle='#e8f4ff';g.lineWidth=2;g.beginPath();g.ellipse(x,0,W*.22,W*1.25,0,0,TAU);g.stroke();}
+  g.lineCap='round';for(let i=0;i<18;i++){const q=(t*4+hash(i*2.7))%1,x=q*L,y=(hash(i*5.3)-.5)*W*2.2;g.globalAlpha=a*.7*(1-q);g.strokeStyle=i%2?'#ffffff':GOKU_KI;g.lineWidth=1.2;g.beginPath();g.moveTo(x,y);g.lineTo(x+60+hash(i)*80,y);g.stroke();}
+  g.globalAlpha=a;g.drawImage(glowSprite('#dff0ff',1),-W*1.6,-W*1.6,W*3.2,W*3.2);
+  g.restore();}
+function kameCut(A,D){const col=A.ch.col,KI=GOKU_KI;
+ const cup=Q('air',{lean:-.08,hd:.12,aF:[-.6,2.35,0],aB:[-.4,2.45,0],gF:1,gB:1,lF:[.95,-1.7,0],lB:[.25,-1.1,0],pt:.8});
+ const push=Q('air',{lean:.28,hd:.25,aF:[.75,.04,0],aB:[.7,.08,0],gF:1,gB:1,lF:[.5,-1.0,0],lB:[-.25,-.9,0],pt:.8});
+ const palm=Q('mui',{fx:[48,-26],y:22,lean:.5,ch:.1,aF:[1.58,.02,0],gF:1,aB:[-.4,1.0,0]});
+ const it=Q('mui',{fx:[14,-16],y:4,lean:-.04,hd:.08,aF:[2.55,2.5,0],gF:2,aB:[.08,.3,0]});
+ const air=[Q('air',{lean:.5,aF:[1.6,.05,0],gF:0,aB:[-.6,.9,0],lF:[.9,-1.6,0],lB:[.2,-1.0,0]}),Q('air',{lean:-.3,aF:[.2,1.2,0],aB:[-.4,.8,0],lF:[2.0,-.1,0],lB:[.2,-1.2,0],pt:1}),
+   Q('air',{lean:.3,aB:[1.55,.05,0],gB:0,aF:[.3,1.8,0],lF:[1.2,-1.8,0],lB:[.1,-.9,0]}),Q('air',{rot:-.6,lean:-.2,aF:[-.4,.6,0],aB:[-.8,.5,0],lF:[2.7,-.05,0],lB:[.4,-1.3,0],pt:1})];
+ const AIR_Y=-620,AIR_X=-250;
+ return{title:'KAMEHAMEHA',dmg:340,hits:14,impCol:KI,shots:[
+  // 1 — silver eyes; the aura comes up around him
+  {d:1.3,draw(X,G,u,t){const W=V.W,H=V.H;stageBack(X,G,STG.id,{y:-220,z:2.2,haze:.08});X.fillStyle='rgba(0,2,8,.6)';X.fillRect(0,0,W,H);
+     const o={zoom:1.45*(1+u*.04),hy:.36,hot:.05+.25*seg01(u,.35,.55),rim:'#e8f0ff',rimDx:1.2,fig:{pose:'loose'}};
+     bustAura(G,A.ch,W*.5,0,o,t,.35+.65*seg01(u,.3,.6));drawBust(X,G,A.ch,W*.5,0,o);
+     const k=seg01(u,.45,.6)*(1-seg01(u,.85,1));if(k>0){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=k*.8;const y=H*.37,gr=G.createLinearGradient(0,0,W,0);
+       gr.addColorStop(0,rgba(col,0));gr.addColorStop(.5,'#ffffff');gr.addColorStop(1,rgba(col,0));G.fillStyle=gr;G.fillRect(0,y-1.5,W,3);G.restore();}},
+   ev:[[.1,()=>SFX.heart()],[.6,()=>{tn(1.4,{w:'sine',f0:1318,f1:1318,g:.03,wet:1});tn(1.4,{w:'sine',f0:1975,f1:1975,g:.018,wet:1});}]]},
+  // 2 — they swing at him, again and again, and never touch him
+  {d:1.3,speed:[[0,.55],[1.3,.55]],bg:bgStageTint('#00040c',.45),
+   enter(S){CU.at(A,-50,0,1);CU.at(D,72,0,-1);A.pose=copyPose(A.P.stance);D.pose=copyPose(D.P.stance);S.k=-1;S.to=null;POST.letter=1;A.hot=.5;
+     S.keys=['L1','L2','H','L3','L1','FH'].filter(k=>D.M[k]&&!D.M[k].air);},
+   upd(u,t,S,dt){const n=5,slot=1.3/n,i=Math.min(n-1,(t/slot)|0),lt=(t-i*slot)/slot,key=S.keys[i%S.keys.length],m=D.M[key];
+     if(i!==S.k){S.k=i;S.dg=0;}
+     CU.clip(D,key,Math.min(m.d,lt*m.d*1.05));D.x=72;
+     if(!S.dg&&lt>=.32){S.dg=1;const c=CU.chest(A);A.ghosts.push({pose:copyPose(A.pose),x:A.x,y:A.y,face:A.face,t:0,ui:1,l:.5});S.from=copyPose(A.pose);S.to=DG[[0,1,2,1,0][i]];S.dt=t;
+       uiWhiff(c[0]+10,c[1]-(i%2?20:0),-1);nz(.18,{f0:1400,f1:4200,q:.9,g:.07,a:.02});tn(.35,{w:'sine',f0:2400+i*120,f1:2700+i*120,g:.022,wet:1});}
+     if(S.to){const k=E.o(clamp((t-S.dt)/.05,0,1)),back=E.io(clamp((lt-.72)/.28,0,1))*.5;A.pose=mixPose(mixPose(S.from,S.to,k),A.P.stance,S.dg?back:0);}
+     A.x=-50-(S.to?14*Math.sin(Math.min(1,(t-S.dt)/slot)*PI):0);
+     CU.cam(lerp(4,18,u),-122,lerp(1.65,1.8,u),0);}},
+  // 3 — one open palm, into the gap
+  {d:.8,speed:[[0,1],[.1,.15,'o'],[.24,.15],[.34,1,'i'],[.8,1]],bg:bgStageTint('#00040c',.45),impCol:KI,
+   enter(S){CU.at(A,-50,0,1);CU.at(D,72,0,-1);CU.clip(D,'H',D.M.H.d*.45);S.from=copyPose(A.pose);S.hit=0;S.imp=-9;},
+   upd(u,t,S,dt){const k=E.o(clamp(t/.1,0,1));A.pose=mixPose(S.from,palm,k);A.x=lerp(-50,-10,k);A.ghostT=t<.1?.03:0;
+     if(t>=.1&&!S.hit){S.hit=1;S.imp=t;const c=CU.chest(D);hitFX(c[0],c[1],1,KI,2,'palm');ring(c[0],c[1],'#ffffff',8,200,.4,6);SFX.impact();shake(18);D.vx=700;}
+     if(S.hit){D.pose=D.P.hurtM;D.x+=D.vx*dt;D.vx*=Math.pow(.02,dt);}
+     CU.cam(lerp(20,50,u),-120,lerp(1.9,1.6,E.o(u)),0);},
+   impDyn(S,t){return t-S.imp<.03?'w':t-S.imp<.06?'a':null;}},
+  // 4 — everywhere at once: he is on every side of them, and each time he was just somewhere else
+  {d:1.25,bg:bgStageTint('#00040c',.4),noShadow:1,
+   enter(S){CU.at(D,150,-60,-1);D.pose=D.P.tumble;S.k=-1;S.pts=[[-70,-20,1],[80,-150,-1],[-60,-170,1],[90,10,-1],[-40,60,1]];},
+   upd(u,t,S,dt){const n=S.pts.length,slot=1.0/n,i=Math.min(n-1,(t/slot)|0);
+     D.y=lerp(-60,-250,E.o(u));D.x=150+Math.sin(t*9)*6;
+     if(t<1.0&&i!==S.k){if(S.k>=0)A.ghosts.push({pose:copyPose(A.pose),x:A.x,y:A.y,face:A.face,t:0,ui:1,l:.4});S.k=i;const p=S.pts[i];
+       A.x=D.x+p[0];A.y=D.y+p[1];A.face=p[2];A.pose=air[i%air.length];CINE.cut=1;
+       const c=CU.chest(D);hitFX(c[0],c[1],p[2],KI,i===n-1?2:1,'blunt');SFX.hit(i===n-1?1:.7,'blunt');ink(c[0],c[1],4,p[2],340);D.pose=i%2?D.P.hurtH:D.P.tumble;D.shk=.08;
+       if(i===n-1){ring(c[0],c[1],'#ffffff',10,240,.5,8);shake(16);}}
+     if(t>=1.0){const k=t-1.0;A.pose=air[3];D.y-=k*k*2600;D.pose=D.P.tumble;}
+     CU.cam(D.x-10,D.y-60,lerp(1.25,1.1,u),0);}},
+  // 5 — two fingers to his forehead
+  {d:.85,bg:bgStageTint('#00040c',.4),noShadow:1,
+   enter(S){CU.at(A,-60,0,1);A.pose=it;A.alpha=1;D.alpha=0;S.go=0;},
+   upd(u,t,S){A.pose=breathe(A,it);if(t>.5&&!S.go){S.go=1;itFlash(A.x,A.y);nz(.12,{type:'highpass',f0:4200,g:.14});tn(.2,{w:'sine',f0:1800,f1:500,g:.06,wet:1});}
+     A.alpha=t<.44?1:t<.5?(((t*80)|0)%2):0;CU.on(A,0,170,lerp(2.9,3.2,u),0);},
+   exit(){A.alpha=1;D.alpha=1;}},
+  // 6 — high above them: cupped hands at his hip, the light gathering between them
+  {d:1.9,noShadow:1,noFront:1,bg:bgStageTint('#000610',.5),
+   enter(S){CU.at(A,AIR_X,AIR_Y,1);A.pose=cup;A.auraK=1.5;CU.at(D,140,-330,-1);D.pose=D.P.tumble;itFlash(A.x,A.y);tn(.2,{w:'sine',f0:500,f1:1900,g:.06,wet:1});S.R=0;},
+   upd(u,t,S,dt){A.pose=breathe(A,cup);A.hot=1;D.y=lerp(-330,-360,E.o(u));D.shk=.05;
+     const h=CU.hand(A),hb=trailSeg(A,{seg:'aB'})[1];S.hx=(h[0]+hb[0])/2;S.hy=(h[1]+hb[1])/2;S.R=lerp(4,40,E.i(seg01(t,.1,1.8)));
+     if(rnd()<.9){const a=rnd(TAU),r=rnd(220,90);pt({x:S.hx+Math.cos(a)*r,y:S.hy+Math.sin(a)*r,vx:-Math.cos(a)*r*2.6,vy:-Math.sin(a)*r*2.6,l:.36,s:rnd(2.4,1),c:rnd()<.5?KI:'#ffffff',t:'spark',g:0,dr:.6});}
+     CU.cam(lerp(A.x+40,A.x+10,E.io(u)),lerp(A.y-120,A.y-110,u),lerp(1.35,1.75,E.io(u)),lerp(-.02,.03,u));},
+   glow(g){const S=CINE.S;if(S.hx!==undefined)kameBall(g,S.hx,S.hy,S.R,gameT,1);},
+   ev:[[.05,()=>SFX.charge(1.8)],[.2,()=>tn(1.7,{w:'sawtooth',f0:70,f1:180,g:.06})],[1.0,()=>SFX.rise(.9)]]},
+  // 7 — he lets it go: the beam catches them in the air and drives them into the ground
+  {d:2.4,noShadow:1,speed:[[0,1],[.08,.25,'o'],[.3,.25],[.42,1,'i'],[2.4,1]],bg:bgStageTint('#000610',.4),impCol:KI,
+   enter(S){CU.at(A,AIR_X,AIR_Y,1);A.pose=push;CU.at(D,140,-360,-1);D.pose=D.P.tumble;S.W=0;S.imp=-9;S.gnd=0;S.bx=0;
+     const h=CU.hand(A);S.hx=h[0]+8;S.hy=h[1];const c=CU.chest(D),dx=c[0]-S.hx,dy=c[1]-S.hy,L=Math.hypot(dx,dy);S.dx=dx/L;S.dy=dy/L;
+     S.gx=S.hx+S.dx*(-S.hy/S.dy);S.imp=0;SFX.impact();SFX.beam();shake(22);},
+   upd(u,t,S,dt){A.pose=push;A.hot=1;S.W=lerp(10,38,E.o(seg01(t,0,.2)))*(1-seg01(t,1.9,2.3));if(POST.flash>0)POST.flash=Math.max(0,POST.flash-dt*1.4);
+     if(!S.gnd){D.x+=S.dx*1100*dt;D.y+=S.dy*1100*dt;D.pose=D.P.tumble;D.shk=.1;if(D.y>=0){D.y=0;D.x=S.gx;S.gnd=1;S.bx=gameT;D.pose=D.P.down;SFX.impact();SFX.boom(1.4);shake(30);POST.flash=.32;POST.flashC='#dcecff';
+         for(let i=0;i<40;i++)pt({x:S.gx+rnd(80,-80),y:-4,vx:rnd(900,-900),vy:-rnd(1300,300),l:rnd(1.4,.6),s:rnd(10,3),c:INK,t:'rock',g:2200,dr:.8});}}
+     if(rnd()<.8)pt({x:S.hx+rnd(20,-20),y:S.hy+rnd(20,-20),vx:-S.dx*rnd(200,60)+rnd(90,-90),vy:-S.dy*rnd(200,60)+rnd(90,-90),l:rnd(.4,.2),s:rnd(2.4,1),c:rnd()<.5?KI:'#ffffff',t:'spark',g:0});
+     const k=E.io(seg01(u,.14,.62));CU.cam(lerp(A.x+150,(A.x+S.gx)/2+40,k),lerp(A.y-120,-392,k),lerp(1.25,.5,k),0);},
+   impDyn(S,t){return t-S.imp<.035?'w':t-S.imp<.07?'a':t-S.imp<.1?'b':null;},
+   glow(g){const S=CINE.S;const ex=S.gnd?S.gx:D.x+(-S.dx)*10,ey=S.gnd?-10:D.y-90;kameBeam(g,S.hx,S.hy,ex,ey,S.W,gameT,1);kameBall(g,S.hx,S.hy,S.W*1.2,gameT,1);
+     if(S.gnd){const k=gameT-S.bx,r=lerp(120,700,E.o(Math.min(1,k*1.2))),a=Math.max(0,1-k/2.2);g.save();g.globalCompositeOperation='lighter';
+       g.globalAlpha=a;g.drawImage(glowSprite(KI),S.gx-r*1.4,-r*1.4,r*2.8,r*2.8);
+       const dg=g.createRadialGradient(S.gx,0,0,S.gx,0,r*.62);dg.addColorStop(0,rgba('#ffffff',a));dg.addColorStop(.55,rgba('#cfe6ff',.8*a));dg.addColorStop(1,rgba(KI,0));g.fillStyle=dg;g.beginPath();g.ellipse(S.gx,0,r*.62,r*.5,0,PI,TAU);g.fill();
+       g.globalAlpha=a*.9;g.drawImage(glowSprite('#ffffff',1),S.gx-r*.4,-r*.45,r*.8,r*.8);
+       for(let i=0;i<2;i++){const q=Math.min(1,k*(1.4-i*.4));g.globalAlpha=(1-q)*.8;g.strokeStyle=i?KI:'#ffffff';g.lineWidth=(1-q)*14+2;g.beginPath();g.ellipse(S.gx,-6,q*900,q*120,0,0,TAU);g.stroke();}g.restore();}},
+   under(X){const S=CINE.S;if(!S.gnd)return;const k=Math.min(1,(gameT-S.bx)*3),w=160*k;X.fillStyle='#020306';X.beginPath();X.ellipse(S.gx,6,w,26*k,0,0,PI);X.fill();}},
+  // 8 — the light dies down; he drifts to the ground, and the aura settles
+  {d:1.5,noShadow:0,bg:bgStageTint('#000610',.3),
+   enter(S){S.gx=S.gx||140;CU.at(D,S.gx,0,-1);D.pose=D.P.down;CU.at(A,S.gx-230,-150,1);A.pose=cup;S.y0=-150;POST.letter=1;},
+   upd(u,t,S){const k=E.io(seg01(u,0,.75));A.y=lerp(S.y0,0,k);A.pose=mixPose(Q('air',{lean:-.05,hd:.1,aF:[.1,.3,0],aB:[.0,.3,0],gF:2,gB:2,lF:[.2,-.3,0],lB:[-.1,-.35,0],pt:.9}),A.P.win,seg01(u,.6,.8));A.hot=1-u*.6;
+     if(rnd()<.5)pt({x:S.gx+rnd(160,-160),y:-rnd(40,0),vx:rnd(40,-40),vy:-rnd(90,20),l:rnd(1.6,.8),s:rnd(26,12),c:'#000',t:'dust',g:-30,dr:.2});
+     CU.cam(lerp(S.gx-150,S.gx-110,u),-130,lerp(1.15,1.3,u),0);A.auraK=lerp(1.5,1,u);},exit(){A.auraK=0;},
+   glow(g){const S=CINE.S;g.save();g.globalCompositeOperation='lighter';g.globalAlpha=Math.max(0,.5-CINE.t*.3);g.drawImage(glowSprite(KI),S.gx-260,-200,520,260);g.restore();}},
+ ]};}
+
+/* ---------------- his path ---------------- */
+PLATE.gokuArrive=(X,G,u,t,ctx)=>{const W=V.W,H=V.H;stageBack(X,G,ctx.stage,{y:-200,z:1.4,haze:.18});
+  // a streak of light coming down out of the sky, and him standing where it landed
+  const k=clamp(u*3,0,1);G.save();G.globalCompositeOperation='lighter';G.globalAlpha=(1-k)*.9;const gr=G.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(200,220,255,0)');gr.addColorStop(1,'#ffffff');G.fillStyle=gr;G.fillRect(W*.5-3,0,6,H*.9);G.restore();
+  const ch=chOf('goku'),o={pose:'loose',hot:.5,rim:'#e8f0ff',rimDx:1.2,t},x=W*.5,y=H*.96+u*H*.05,sc=H/330*(1+u*.2);silAura(G,ch,x,y,sc,t,.8,o);sil(X,G,ch,x,y,sc,o);};
+PATHS.goku={hero:'goku',kicker:'LIMITED TIME',title:'A GOOD FIGHT',chord:[110,164.8,220,277.2],
+  blurb:'Something falls out of the sky: a man with wild hair who is looking for strong opponents and having the time of his life.',
+  intro:[['narr','Something fell out of the sky over the monastery.','gokuArrive'],['goku','Whoa. Everybody here\'s a shadow. That\'s kinda cool.','gokuArrive'],
+    ['goku','I heard there are strong fighters around here. I\'m getting excited!','l']],
+  fights:[
+   {op:'sol',stage:'monastery',pre:[['sol','You train here too?'],['goku','Nope, just passing through. Wanna spar?']],win:[['sol','You did not block once.'],['goku','Didn\'t need to. My body moved on its own.']]},
+   {op:'bolt',stage:'storm',pre:[['bolt','Heard you dodge everything. Dodge this.','l'],['goku','Ha! You\'re fast. Let\'s go!']]},
+   {op:'goliath',stage:'forge',pre:[['goliath','Small.','l'],['goku','The big guys are always the most fun.']],win:[['goliath','...You smiled the whole time.'],['goku','Well, yeah! That was great!']]},
+   {op:'grim',stage:'grave',pre:[['grim','None pass the last gate.'],['goku','I\'ve been dead before. It\'s really not that bad.','l']]},
+  ],
+  end:[['goku','Man, that was fun! You shadows are pretty strong.'],['goku','I should get back before someone yells at me for skipping training.'],['goku','Let\'s fight again sometime!','l']]};
+
+/* =======================================================================
    MAIN — input, match flow, scenes, loop.
    ======================================================================= */
 const GAME={scene:'title',mode:'cpu',fighting:false,round:1,timer:99,slow:1,phase:'',phaseT:0,ann:null,over:false,diff:1,demo:false,paused:false};
@@ -4088,7 +4396,7 @@ function dummyThink(f,dt){const I=f.in,o=opp(f);for(const k of['l','r','u','d','
 
 /* ---------------- demo (title background) ---------------- */
 function demoReset(){
-  const P=playable(),ev=liveEvent(),a=ev&&rnd()<.5?ev:pick(P),b=pick(P.filter(c=>c!==a));
+  const P=playable(),ev=liveEvents(),a=ev.length&&rnd()<.5?pick(ev):pick(P),b=pick(P.filter(c=>c!==a));
   FTR=[mkFighter(a,0,'cpu'),mkFighter(b,1,'cpu')];FTR[0].aiLvl=2;FTR[1].aiLvl=2;FTR[0].meter=60;FTR[1].meter=60;
   loadStage(pick([a.stage,b.stage]));GAME.demo=true;GAME.fighting=true;GAME.mode='cpu';PROJ.length=0;parts.length=0;effs.length=0;decals.length=0;
   fightCam(0,1);
@@ -4122,12 +4430,12 @@ function sceneTitle(rdt){
   X.setTransform(1,0,0,1,0,0);X.fillStyle='rgba(2,2,4,.58)';X.fillRect(0,0,V.W,V.H);
   const S=US();drawLogo(V.W/2,V.H*.38,1);
   const items=['PATHS','VERSUS CPU','VERSUS PLAYER','TRAINING'];menuItems(items,V.W/2,V.H*.58,15,32,'center');
-  // a limited guest is on: say so, and say how long for
-  const ev=liveEvent();if(ev){const st=spec(ev),sp=SPECIAL[ev.id],it=MENU.items[0];
-    txt('LIMITED',V.W/2+62*S,it.y+it.h*.72,7.5,{w:700,track:2,c:ev.col});
-    X.fillStyle=ev.col;X.fillRect(28*S,30*S,2*S,58*S);
-    txt('LIMITED TIME',40*S,42*S,8.5,{w:700,track:2,c:ev.col});txt(ev.name,40*S,68*S,22,{w:200,track:2});
-    txt(st.note+(sp.keep?st.kept?'   ·   YOURS TO KEEP':'   ·   CLEAR THE PATH TO KEEP '+ev.name:''),40*S,86*S,8,{w:600,track:2,c:'#9a9aa8'});}
+  // limited guests are on: say so, and say how long for, one under the other
+  const evs=liveEvents();if(evs.length){const it=MENU.items[0];txt('LIMITED',V.W/2+62*S,it.y+it.h*.72,7.5,{w:700,track:2,c:evs[0].col});
+    evs.forEach((ev,i)=>{const st=spec(ev),sp=SPECIAL[ev.id],y=i*76*S;
+      X.fillStyle=ev.col;X.fillRect(28*S,30*S+y,2*S,58*S);
+      txt('LIMITED TIME',40*S,42*S+y,8.5,{w:700,track:2,c:ev.col});txt(ev.name,40*S,68*S+y,22,{w:200,track:2});
+      txt(st.note+(sp.keep?st.kept?'   ·   YOURS TO KEEP':'   ·   CLEAR THE PATH TO KEEP '+ev.name:''),40*S,86*S+y,8,{w:600,track:2,c:'#9a9aa8'});});}
   txt('A D  MOVE   ·   W  JUMP   ·   S  CROUCH   ·   J  LIGHT   ·   K  HEAVY   ·   L  SPECIAL   ·   I  THROW   ·   U  ULTIMATE   ·   HOLD BACK TO BLOCK',V.W/2,V.H-26*S,8.5,{w:500,al:'center',c:'#777784',track:1});
   txt('M  SOUND '+(AU.on?'ON':'OFF'),V.W-24*S,24*S,8.5,{w:600,al:'right',c:'#777784',track:2});
   const n=nav();hoverMenu();
