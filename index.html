@@ -2209,13 +2209,13 @@ function auMute(v){AU.on=v===undefined?!AU.on:v;if(AU.master)AU.master.gain.setT
 const _T=()=>AU.ctx.currentTime;
 function _out(node,wet){node.connect(AU.sfx);if(wet)node.connect(AU.revIn);}
 function nz(dur,o){ // filtered noise burst
-  if(!AU.ctx)return;o=o||{};const a=AU.ctx,t=_T()+(o.at||0),s=a.createBufferSource();s.buffer=AU.noise;s.loop=true;
+  if(!AU.ctx||AU.skip)return;o=o||{};const a=AU.ctx,t=_T()+(o.at||0),s=a.createBufferSource();s.buffer=AU.noise;s.loop=true;
   const f=a.createBiquadFilter();f.type=o.type||'bandpass';f.frequency.setValueAtTime(o.f0||1200,t);if(o.f1)f.frequency.exponentialRampToValueAtTime(o.f1,t+dur);f.Q.value=o.q||1;
   const g=a.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.g||.3,t+(o.a||.005));g.gain.exponentialRampToValueAtTime(.0001,t+dur);
   s.connect(f);f.connect(g);_out(g,o.wet);s.start(t,Math.random());s.stop(t+dur+.05);
 }
 function tn(dur,o){ // oscillator with pitch sweep
-  if(!AU.ctx)return;o=o||{};const a=AU.ctx,t=_T()+(o.at||0),s=a.createOscillator();s.type=o.w||'sine';
+  if(!AU.ctx||AU.skip)return;o=o||{};const a=AU.ctx,t=_T()+(o.at||0),s=a.createOscillator();s.type=o.w||'sine';
   s.frequency.setValueAtTime(o.f0||200,t);if(o.f1)s.frequency.exponentialRampToValueAtTime(o.f1,t+dur);if(o.det)s.detune.value=o.det;
   const g=a.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.g||.3,t+(o.a||.004));g.gain.exponentialRampToValueAtTime(.0001,t+dur);
   s.connect(g);_out(g,o.wet);s.start(t);s.stop(t+dur+.05);
@@ -2392,6 +2392,7 @@ function renderWorld(dt,actors,o){
   if(o.glow)o.glow(G);
   for(const f of actors)drawGhosts(f);
   screenXf(G);if(STG&&(!o.bg||o.bg==='stage'))drawWxGlow(G);
+  if(o.preGlow){X.setTransform(1,0,0,1,0,0);o.preGlow();}
   X.setTransform(1,0,0,1,0,0);X.save();X.globalCompositeOperation='lighter';X.drawImage(GL,0,0);X.restore();
   bloom(QUAL.lvl>=3?0:POST.bloom);
   if(POST.vig)X.drawImage(VIG,0,0,V.W,V.H);
@@ -2414,7 +2415,7 @@ function playCine(C){
   PROJ.length=0;
   enterShot();
 }
-function enterShot(){const sh=CINE.shots[CINE.i];sh._ev=new Set();if(sh.enter)sh.enter(CINE.S,CINE);CINE.cut=1;}
+function enterShot(){const sh=CINE.shots[CINE.i];sh._ev=new Set();if(CINE.movie){parts.length=0;effs.length=0;decals.length=0;}if(sh.enter)sh.enter(CINE.S,CINE);CINE.cut=1;}
 function cineActors(){return[...(CINE.back||[]),...FTR.filter(f=>!f.hide),...CINE.extra];}
 function updCine(rdt){
   const C=CINE;if(!C)return 0;const sh=C.shots[C.i];
@@ -2437,14 +2438,16 @@ function endCine(){const C=CINE;CINE=null;POST.imp=null;POST.tint=0;POST.flash=0
   if(C.done)C.done(C.S,C);}
 function renderCine(rdt){
   const C=CINE,sh=C.shots[C.i];
-  const im=sh.imp&&sh.imp.find(q=>C.t>=q[0]&&C.t<q[1]);
-  const imp=im?IMPK(im[2],C):null;
-  renderWorld(C.dt||0,cineActors(),{bg:sh.bg,imp,glow:sh.glow,over:sh.over,under:sh.under,noShadow:sh.noShadow,noFront:sh.noFront,impExtra:sh.impExtra});
+  const im=sh.imp&&sh.imp.find(q=>C.t>=q[0]&&C.t<q[1]),ik=im?im[2]:sh.impDyn?sh.impDyn(C.S,C.t):null;
+  const imp=ik?IMPK(ik,C,sh):null;
+  if(sh.draw&&!imp)renderDrawnShot(C,sh);
+  else renderWorld(C.dt||0,cineActors(),{bg:sh.bg,imp,glow:sh.glow,over:sh.over,under:sh.under,noShadow:sh.noShadow,noFront:sh.noFront,impExtra:sh.impExtra,preGlow:sh.preGlow});
   if(sh.post&&!imp){X.setTransform(1,0,0,1,0,0);sh.post(X,Math.min(1,C.t/sh.d),C.t,C.S);}
+  if(C.movie)moviePost(C,sh);
   if(C.title&&C.i<=1){drawCineTitle(C);}
   if(C.cut){C.cut=0;}
 }
-function IMPK(k,C){const col=(C.A&&C.A.ch.col)||'#fff';
+function IMPK(k,C,sh){const col=(sh&&sh.impCol)||(C.A&&C.A.ch.col)||'#fff';
   return k==='b'?{bg:'#000000',ink:'#ffffff'}:k==='a'?{bg:col,ink:'#000000'}:k==='ai'?{bg:'#000000',ink:col}:{bg:'#ffffff',ink:'#000000'};}
 function drawCineTitle(C){
   const t=C.rt,a=clamp(t*3,0,1)*clamp((1.9-t)*2,0,1);if(a<=0)return;
@@ -2523,7 +2526,9 @@ function drawFlashOverlay(){
 function startUlt(a,d){
   const cut=CUTS[a.ch.id];if(!cut){return;}
   hitstop=0;const home={ax:a.x,dx:d.x,face:a.face};
-  const C=cut(a,d);
+  let C=cut(a,d);
+  // a rivalry settled on the right ground plays its movie instead
+  const rv=rivalMovieFor(a,d);if(rv&&d.hp<=Math.round((C.dmg||320)*a.ch.pow)&&(a.wins>=1||GAME.mode==='train')){C=MOVIES[rv.movie](a,d);d.rivalDone=rv.movie;markDone('umbra.movies',rv.movie);}
   C.A=a;C.D=d;
   const dmg=C.dmg||320;
   C.done=()=>{
@@ -3074,6 +3079,751 @@ function drawMoveList(ch,x,y,o){const S=US(),sn=specialNames(ch.id);
   const gy=o&&o.gap||15;rows.forEach((r,i)=>{txt(r[0],x,y+(18+i*gy)*S,9,{w:700,c:'#fff'});txt(r[1],x+86*S,y+(18+i*gy)*S,9,{w:400,track:1,c:i===9?ch.col:'#b8b8c4'});});}
 
 /* =======================================================================
+   OTHER ANGLES — the same silhouettes drawn front-on, from behind, from
+   above, and in extreme close-up. This is how an animator changes the
+   camera: redraw the character for the new angle.
+   Units match the side view: feet at (0,0), up negative, ~180 tall.
+   ======================================================================= */
+/* tapered limb in the picture plane */
+function limb(c,pts,ws){c.beginPath();tubePath(c,pts,ws,true);c.fill();}
+/* front-view pose presets; arm = [shoulder angle out from hanging, elbow bend inward] */
+const FPOSE={
+  stand:{L:[.22,.25],R:[.22,.25],spread:15},
+  guard:{L:[.5,1.9],R:[.45,2.0],spread:22},
+  palms:{L:[-.25,2.35],R:[-.25,2.35],spread:18},
+  push:{L:[1.35,.1],R:[1.35,.1],spread:24,fore:1},
+  raise:{L:[2.7,.3],R:[2.7,.3],spread:18},
+  claw:{L:[.35,.4],R:[1.2,1.3],spread:16},
+  loose:{L:[.12,.1],R:[.14,.12],spread:12},
+  kneel:{L:[.2,.5],R:[.2,.5],spread:18,kneel:1},
+  cast:{L:[.3,.35],R:[2.9,.2],spread:14},
+};
+function figFront(c,g,ch,o){
+  o=o||{};const P=Object.assign({},FPOSE[o.pose||'stand'],o.over||{}),back=!!o.back,w=ch.w,fem=ch.fem,
+    ink=o.ink||INK,col=o.col||ch.col,hot=o.hot||0,t=o.t===undefined?gameT:o.t,br=Math.sin(t*2.2)*(o.still?0:1);
+  c.save();c.scale(ch.h,ch.h);if(o.tilt)c.rotate(o.tilt);
+  const G2=fn=>{if(!g||o.noGlow)return;g.save();g.setTransform(c.getTransform());fn(g);g.restore();};
+  c.fillStyle=ink;c.strokeStyle=ink;c.lineCap='round';c.lineJoin='round';
+  const kn=P.kneel?1:0,hipY=-92+kn*40+(o.crouch||0),sh=(fem?16:19)*w,hw=(fem?13.5:12)*w,wa=(fem?9.5:11.5)*w,chestY=hipY-38,shY=hipY-56+br*.6,neckY=shY-5;
+  const headY=neckY-14-(o.headDrop||0),hr=11*(ch.helm?1.14:1),hx=(o.look||0)*2;
+  // ---- behind the body: coat / cloak / long hair / tails / scarf
+  if(ch.coat||ch.cloak){const hem=ch.cloak?-4:hipY+44,sw=ch.cloak?1:0,n=ch.cloak?7:5;c.beginPath();c.moveTo(-sh-2,shY+4);
+    for(let i=0;i<=n;i++){const u=i/n,x=lerp(-sh-18-sw*14,sh+18+sw*14,u),y=hem+(i%2?-14:4)+Math.sin(t*3+i)*2;c.lineTo(x,y);}c.lineTo(sh+2,shY+4);c.closePath();c.fill();}
+  if(ch.hair==='wild'&&!back){c.beginPath();c.moveTo(-10,headY-4);for(let i=0;i<=8;i++){const u=i/8,x=lerp(-24,24,u);c.lineTo(x,headY+30+(i%2?16:0)+Math.sin(t*2+i)*2);}c.lineTo(10,headY-4);c.fill();}
+  if(ch.hair==='long'){c.beginPath();c.moveTo(-11,headY);c.lineTo(-15,shY+30);for(let i=0;i<=6;i++)c.lineTo(lerp(-15,15,i/6),shY+30+(i%2?8:0));c.lineTo(15,shY+30);c.lineTo(11,headY);c.fill();}
+  if(ch.hair==='twintails')for(const s of[-1,1]){const sw=Math.sin(t*2.4+s)*4;limb(c,[[s*9,headY-8],[s*20,headY+10],[s*24+sw,shY+30],[s*22+sw*1.6,shY+62]],[5,6,4,1.5]);}
+  if(ch.hair==='ponytail'){const sw=Math.sin(t*2.6)*5;limb(c,[[0,headY-10],[back?0:10,headY-2],[back?sw:16+sw,shY+14],[back?sw*1.4:18+sw*1.5,shY+34]],[4,5,4,1.2]);}
+  if(ch.scarf){const sw=Math.sin(t*4)*4;limb(c,[[5,neckY+2],[16,neckY+14+sw*.3],[22+sw,neckY+34],[20+sw*1.5,neckY+54]],[4,3.8,3,2]);}
+  // ---- legs
+  const sp=P.spread*w;
+  if(kn){for(const s of[-1,1]){limb(c,[[s*hw*.6,hipY],[s*(sp+4),hipY+18],[s*(sp+2),-3]],[9*w,7.5*w,5*w]);c.beginPath();c.ellipse(s*(sp+2),-2,7*w,3,0,0,TAU);c.fill();}}
+  else for(const s of[-1,1]){const lw=ch.loose?1.35:1;limb(c,[[s*hw*.6,hipY],[s*(sp*.55+7),-48],[s*sp,-6]],[9.5*w*lw,7.5*w*lw,4.5*w*(ch.loose?1.5:1)]);
+    c.beginPath();c.ellipse(s*(sp+1.5),-2.5,6.5*w,4,0,0,TAU);c.fill();}
+  // ---- robe / skirt over the legs
+  if(ch.robe){c.beginPath();c.moveTo(-wa-2,hipY-10);const hw2=ch.cloak?36:32;for(let i=0;i<=10;i++){const u=i/10,x=lerp(-hw2,hw2,u)*w;c.lineTo(x,(i%2?-1:3)+Math.sin(t*3+i)*1.5);}c.lineTo(wa+2,hipY-10);c.closePath();c.fill();}
+  if(ch.skirt){c.beginPath();c.moveTo(-wa,hipY-6);for(let i=0;i<=6;i++)c.lineTo(lerp(-hw-10,hw+10,i/6),hipY+22+(i%2?-3:2));c.lineTo(wa,hipY-6);c.fill();}
+  // ---- torso
+  c.beginPath();c.moveTo(-sh,shY);c.quadraticCurveTo(-sh-2,shY+10,-sh+3,chestY+2);c.quadraticCurveTo(-wa-1,chestY+14,-wa,hipY-12);c.lineTo(-hw,hipY+4);
+  c.lineTo(hw,hipY+4);c.lineTo(wa,hipY-12);c.quadraticCurveTo(wa+1,chestY+14,sh-3,chestY+2);c.quadraticCurveTo(sh+2,shY+10,sh,shY);c.closePath();c.fill();
+  if(ch.pads)for(const s of[-1,1]){c.beginPath();c.ellipse(s*(sh+4),shY+4,15,11,s*.3,0,TAU);c.fill();for(let i=0;i<3;i++){c.beginPath();c.moveTo(s*(sh-2+i*6),shY-4);c.lineTo(s*(sh+i*7+2),shY-18-i*2);c.lineTo(s*(sh+5+i*6),shY-4);c.fill();}}
+  if(ch.collar&&!back){c.beginPath();c.moveTo(-9,shY+2);c.lineTo(-13,shY-18);c.lineTo(-4,neckY);c.lineTo(4,neckY);c.lineTo(13,shY-18);c.lineTo(9,shY+2);c.fill();}
+  if(ch.sash){c.beginPath();c.moveTo(-wa,hipY-8);c.lineTo(wa,hipY-8);c.lineTo(wa-2,hipY-2);c.lineTo(-wa+2,hipY-2);c.fill();limb(c,[[wa-3,hipY-6],[wa+2,hipY+14],[wa+4+Math.sin(t*3)*3,hipY+34]],[3,3,2.5]);}
+  // ---- arms
+  const arm=(s,a)=>{const sx=s*(sh-3),sy=shY+3,a1=a[0],e=[sx+s*Math.sin(a1)*31,sy+Math.cos(a1)*31],a2=a1-a[1],wr=[e[0]+s*Math.sin(a2)*29*(P.fore?.45:1),e[1]+Math.cos(a2)*29*(P.fore?.45:1)];
+    const bulk=ch.wep==='gauntlets'?1.4:1,fl=ch.flare?1:0;
+    limb(c,[[sx,sy],e,wr],[7*w,5.6*w,(4.5+fl*5)*w*bulk]);
+    if(fl){c.beginPath();c.moveTo(e[0],e[1]);c.lineTo(wr[0]+s*12,wr[1]+14);c.lineTo(wr[0]-s*10,wr[1]+10);c.fill();}
+    c.beginPath();c.arc(wr[0],wr[1]+2,(P.fore?7:5)*w*bulk,0,TAU);c.fill();return{e,wr};};
+  const AL=arm(-1,P.L),AR=arm(1,P.R);
+  if(ch.wraps&&!o.still)for(const A of[AL,AR]){const sw=Math.sin(t*5+A.wr[0])*5;limb(c,[A.wr,[A.wr[0]+6,A.wr[1]+10+sw],[A.wr[0]+12,A.wr[1]+20+sw]],[2,1.6,1]);}
+  if(ch.beads&&!back){for(let i=0;i<11;i++){const a=PI*.15+i/10*PI*.7;c.beginPath();c.arc(Math.cos(a)*14,shY-6+Math.sin(a)*22,2.6,0,TAU);c.fill();}}
+  // ---- neck and head
+  c.fillRect(-4.8*w,neckY-6,9.6*w,10);
+  c.save();c.translate(hx,headY);if(o.headTilt)c.rotate(o.headTilt);
+  c.beginPath();c.ellipse(0,0,hr*.92,hr*1.12,0,0,TAU);c.fill();
+  // headgear from the front
+  if(ch.hair==='wild'){c.beginPath();const s=[[-1.1,.2],[-1.5,-.4],[-1.05,-.5],[-1.4,-1.2],[-.7,-.95],[-.75,-1.7],[-.2,-1.15],[.1,-1.9],[.35,-1.1],[.85,-1.6],[.8,-.9],[1.45,-1.1],[1.05,-.45],[1.5,-.3],[1.1,.2]];
+    s.forEach((p,i)=>{const x=p[0]*hr,y=p[1]*hr;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fill();}
+  if(ch.hair==='spiky'){c.beginPath();const s=[[-1,0],[-1.45,-.6],[-.9,-.7],[-1.1,-1.45],[-.45,-1.05],[-.2,-1.8],[.2,-1.1],[.6,-1.7],[.7,-.95],[1.3,-1.3],[.95,-.55],[1.4,-.2],[1,0]];
+    s.forEach((p,i)=>{const x=p[0]*hr,y=p[1]*hr;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fill();}
+  if(ch.hair==='ponytail'||ch.hair==='long'||ch.hair==='twintails'){c.beginPath();c.ellipse(0,-hr*.25,hr*1.05,hr*1.02,0,PI,TAU);c.lineTo(hr*1.02,hr*.35);c.lineTo(hr*.7,-hr*.15);c.lineTo(hr*.4,hr*.05);c.lineTo(0,-hr*.25);c.lineTo(-hr*.4,hr*.05);c.lineTo(-hr*.7,-hr*.15);c.lineTo(-hr*1.02,hr*.35);c.fill();
+    if(ch.hair==='twintails')for(const s of[-1,1]){c.beginPath();c.arc(s*hr*.9,-hr*.8,hr*.32,0,TAU);c.fill();}}
+  if(ch.hat){c.beginPath();c.ellipse(0,-hr*.72,hr*2.5,hr*.38,0,0,TAU);c.fill();const sw=Math.sin(t*1.3)*.1;
+    c.beginPath();c.moveTo(-hr*.95,-hr*.8);c.quadraticCurveTo(-hr*.6,-hr*2.4,hr*(.2+sw),-hr*3.1);c.quadraticCurveTo(hr*(.9+sw*2),-hr*3.4,hr*(1.7+sw*3),-hr*3.0);c.quadraticCurveTo(hr*.5,-hr*2.4,hr*.95,-hr*.8);c.fill();}
+  if(ch.hood){c.beginPath();c.moveTo(-hr*1.35,hr*1.3);c.quadraticCurveTo(-hr*1.55,-hr*.9,0,-hr*1.9);c.quadraticCurveTo(hr*1.55,-hr*.9,hr*1.35,hr*1.3);c.closePath();c.fill();}
+  if(ch.helm){c.beginPath();c.rect(-hr*1.02,-hr*1.1,hr*2.04,hr*2.1);c.fill();for(const s of[-1,1]){c.beginPath();c.moveTo(s*hr*.8,-hr*.8);c.quadraticCurveTo(s*hr*2.4,-hr*1.2,s*hr*2.2,-hr*2.6);c.quadraticCurveTo(s*hr*1.7,-hr*1.4,s*hr*.5,-hr*1.05);c.fill();}}
+  // eyes (front)
+  if(!back&&o.eyes!==0){const ea=o.eyes===undefined?1:o.eyes,blink=o.blink?Math.max(0,1-Math.abs(Math.sin(t*.9))*18):0,open=Math.max(.08,1-blink),type=ch.eyes;
+    G2(q=>{const R=hr*(type==='demon'?.9:.65)*(1+hot*.4);
+      for(const s of[-1,1]){const ex=s*hr*.4,ey=ch.hood?hr*.15:hr*.08;q.globalAlpha=.8*ea;q.drawImage(glowSprite(col),ex-R,ey-R*.6,R*2,R*1.2);q.globalAlpha=ea;q.fillStyle=mixC(col,'#ffffff',.6);
+        if(type==='visor'){if(s<0){q.fillRect(-hr*.8,ey-1,hr*1.6,2.4*open);}continue;}
+        if(type==='void'){q.beginPath();q.ellipse(ex,ey,hr*.15,hr*.12*open,0,0,TAU);q.fill();continue;}
+        const L=hr*(type==='demon'?.42:.34),tl=type==='calm'?0:.22;q.beginPath();q.moveTo(ex-s*L*.5,ey-tl*s*2);q.lineTo(ex+s*L*.5,ey+tl*s*2-1);q.lineTo(ex+s*L*.45,ey+tl*s*2+1.6*open);q.lineTo(ex-s*L*.45,ey-tl*s*2+1.8*open);q.closePath();q.fill();}
+      q.globalAlpha=1;});}
+  c.restore();
+  // ---- weapons (front)
+  const wepGlow=(fn)=>G2(q=>{q.strokeStyle=col;q.lineCap='round';q.globalAlpha=.4+hot*.6;fn(q);q.globalAlpha=1;});
+  const H=AL.wr,H2=AR.wr;
+  if(o.weapon!==false&&!o.noWeapon){
+    if(ch.wep==='odachi'){const a=o.bladeA===undefined?.25:o.bladeA,tx=H[0]-Math.sin(a)*104,ty=H[1]+Math.cos(a)*104;
+      c.beginPath();c.moveTo(H[0]-2,H[1]);c.lineTo(tx,ty);c.lineTo(H[0]+2,H[1]+2);c.fill();c.fillRect(H[0]-6,H[1]-2,12,3);wepGlow(q=>{q.lineWidth=1.6;q.beginPath();q.moveTo(H[0]-1,H[1]+8);q.lineTo(tx,ty);q.stroke();});}
+    if(ch.wep==='daggers')for(const A of[H,H2]){c.beginPath();c.moveTo(A[0]-2,A[1]+4);c.lineTo(A[0],A[1]+30);c.lineTo(A[0]+2,A[1]+4);c.fill();wepGlow(q=>{q.lineWidth=1.3;q.beginPath();q.moveTo(A[0],A[1]+6);q.lineTo(A[0],A[1]+29);q.stroke();});}
+    if(ch.wep==='hammer'){const cx=(H[0]+H2[0])/2;c.fillRect(cx-2.5,H[1]-20,5,-H[1]-30);c.beginPath();c.rect(cx-24,-52,48,52);c.fill();
+      wepGlow(q=>{q.lineWidth=1.8;q.beginPath();q.moveTo(cx-16,-44);q.lineTo(cx-6,-30);q.lineTo(cx-12,-18);q.lineTo(cx+2,-6);q.moveTo(cx+14,-46);q.lineTo(cx+6,-26);q.lineTo(cx+16,-12);q.stroke();});}
+    if(ch.wep==='staff'){const x=H2[0]+2;c.fillRect(x-2,headY-60,4,-headY+60);c.beginPath();c.moveTo(x,headY-58);c.quadraticCurveTo(x-12,headY-74,x-6,headY-86);c.lineTo(x,headY-66);c.lineTo(x+6,headY-86);c.quadraticCurveTo(x+12,headY-74,x,headY-58);c.fill();
+      G2(q=>{const R=(10+hot*6);q.drawImage(glowSprite(col),x-R*3,headY-72-R*3,R*6,R*6);q.fillStyle=mixC(col,'#fff',.6);q.beginPath();q.arc(x,headY-72,R*.45,0,TAU);q.fill();});}
+    if(ch.wep==='scythe'){const x=H[0]-2;c.fillRect(x-2,headY-50,4,-headY+50);c.beginPath();c.moveTo(x,headY-48);c.quadraticCurveTo(x+60,headY-80,x+110,headY-30);c.quadraticCurveTo(x+60,headY-62,x,headY-38);c.fill();
+      wepGlow(q=>{q.lineWidth=2;q.beginPath();q.moveTo(x+4,headY-42);q.quadraticCurveTo(x+60,headY-66,x+106,headY-32);q.stroke();});}
+    if(ch.wep==='spear'){const x=H2[0]+2;c.fillRect(x-1.6,headY-90,3.2,-headY+90);c.beginPath();c.moveTo(x,headY-118);c.lineTo(x+5,headY-94);c.lineTo(x,headY-88);c.lineTo(x-5,headY-94);c.fill();
+      wepGlow(q=>{q.lineWidth=1.4;q.beginPath();q.moveTo(x,headY-116);q.lineTo(x+4,headY-94);q.stroke();});}
+    if(ch.wep==='gauntlets')for(const A of[H,H2])G2(q=>{const R=7+hot*6;q.globalAlpha=.5+hot*.4;q.drawImage(glowSprite(col),A[0]-R*2,A[1]-R*2,R*4,R*4);q.globalAlpha=.8;q.strokeStyle=col;q.lineWidth=1.3;
+      q.beginPath();for(let i=0;i<3;i++){q.moveTo(A[0]-7,A[1]-6-i*5);q.lineTo(A[0]+7,A[1]-6-i*5);}q.stroke();q.globalAlpha=1;});
+  }
+  c.restore();
+  return{head:[hx*ch.h,headY*ch.h],hands:[[H[0]*ch.h,H[1]*ch.h],[H2[0]*ch.h,H2[1]*ch.h]],chest:[0,chestY*ch.h]};
+}
+/* seen from directly above */
+function figTop(c,kind,x,y,s,ang,col){
+  c.save();c.translate(x,y);c.rotate(ang||0);c.scale(s,s);c.fillStyle=col||INK;
+  if(kind==='kneel'){c.beginPath();c.ellipse(0,8,21,19,0,0,TAU);c.fill();c.beginPath();c.ellipse(0,-5,19,10,0,0,TAU);c.fill();c.beginPath();c.arc(0,-7,8.5,0,TAU);c.fill();
+    c.beginPath();c.ellipse(0,5,6,4,0,0,TAU);c.fill();}
+  else if(kind==='lie'){c.beginPath();c.ellipse(0,0,12,30,0,0,TAU);c.fill();c.beginPath();c.arc(0,-38,9,0,TAU);c.fill();c.lineCap='round';c.strokeStyle=col||INK;c.lineWidth=8;
+    c.beginPath();c.moveTo(-8,-20);c.lineTo(-34,-6);c.lineTo(-46,12);c.moveTo(8,-20);c.lineTo(26,-34);c.lineTo(44,-30);c.moveTo(-6,26);c.lineTo(-12,62);c.lineTo(-10,90);c.moveTo(6,26);c.lineTo(18,58);c.lineTo(30,82);c.stroke();}
+  else if(kind==='stand'){c.beginPath();c.ellipse(0,0,20,11,0,0,TAU);c.fill();c.beginPath();c.arc(0,-2,8.5,0,TAU);c.fill();}
+  c.restore();
+}
+/* an extreme close-up of a pair of eyes: the face fills the frame */
+function drawEyesClose(c,g,ch,open,o){
+  o=o||{};const W=V.W,H=V.H,cx=W/2+(o.dx||0)*W,cy=H/2+(o.dy||0)*H,sc=H/6*(o.zoom||1),col=o.col||ch.col,t=gameT,skin=o.skin||'#050407';
+  c.fillStyle=skin;c.fillRect(0,0,W,H);
+  const sac=Math.sin(t*1.7)*.03*sc+(o.look||0)*sc*.25,op=clamp(open,0,1);
+  for(const s of[-1,1]){const ex=cx+s*sc*1.4,ey=cy,L=sc*(ch.eyes==='demon'?1.08:.95),tl=(ch.eyes==='calm'?.04:.16)*s,hh=L*.36*op;
+    g.save();g.globalCompositeOperation='lighter';
+    g.globalAlpha=op*.85;g.drawImage(glowSprite(col),ex-L*2.2,ey-L*1.2,L*4.4,L*2.4);g.globalAlpha=Math.min(1,op*1.4);
+    // the lit almond, darker at the corners
+    const eg=g.createRadialGradient(ex+sac,ey,0,ex+sac,ey,L);eg.addColorStop(0,mixC(col,'#ffffff',.35));eg.addColorStop(.45,col);eg.addColorStop(1,mixC(col,'#000000',.55));
+    g.fillStyle=eg;g.beginPath();g.moveTo(ex-s*L,ey-tl*L);g.quadraticCurveTo(ex,ey-hh*1.7-tl*L*.3,ex+s*L,ey+tl*L);g.quadraticCurveTo(ex,ey+hh*1.35,ex-s*L,ey-tl*L);g.fill();
+    // iris ring, pupil, catchlight
+    const ir=L*.36;g.strokeStyle=mixC(col,'#ffffff',.6);g.lineWidth=L*.035;g.beginPath();g.ellipse(ex+sac,ey,ir,Math.min(ir,hh*1.05),0,0,TAU);g.stroke();
+    g.globalCompositeOperation='source-over';g.fillStyle=mixC(col,'#000000',.7);g.beginPath();
+    if(ch.eyes==='demon'||ch.eyes==='slit')g.ellipse(ex+sac,ey,ir*.18,Math.min(ir*.9,hh),0,0,TAU);else g.ellipse(ex+sac,ey,ir*.42,Math.min(ir*.42,hh*.9),0,0,TAU);g.fill();
+    g.globalCompositeOperation='lighter';g.fillStyle='#ffffff';g.globalAlpha=op*.9;g.beginPath();g.ellipse(ex+sac-ir*.35,ey-Math.min(ir,hh)*.4,ir*.12,ir*.08,0,0,TAU);g.fill();
+    if(o.reflect&&op>.3){g.globalAlpha=op*.9;o.reflect(g,ex+sac,ey,ir*.8);}
+    g.restore();
+    // heavy lids and brow stay ink over the light
+    c.fillStyle=skin;c.beginPath();c.moveTo(ex-s*L*1.5,ey-L*1.4);c.lineTo(ex-s*L*1.5,ey-tl*L-L*.05);c.quadraticCurveTo(ex,ey-hh*1.9-tl*L*.3-L*.08-(o.brow||0)*L*.25,ex+s*L*1.4,ey+tl*L-L*.1);c.lineTo(ex+s*L*1.4,ey-L*1.4);c.fill();
+    c.beginPath();c.moveTo(ex-s*L*1.5,ey+L*1.4);c.lineTo(ex-s*L*1.5,ey-tl*L+L*.04);c.quadraticCurveTo(ex,ey+hh*1.5+L*.06,ex+s*L*1.4,ey+tl*L+L*.06);c.lineTo(ex+s*L*1.4,ey+L*1.4);c.fill();}
+}
+
+/* =======================================================================
+   PAINTED PERSPECTIVE — a pinhole camera used only to lay out sets (floor,
+   pillars, stairs, gates) the way a background painter rules vanishing
+   lines. Characters stay flat drawings, placed and scaled by depth.
+   World: x right, y DOWN (negative is up), z away from the camera.
+   pitch > 0 looks down, pitch < 0 looks up.
+   ======================================================================= */
+function pcam(o){
+  const cy=Math.cos(o.yaw||0),sy=Math.sin(o.yaw||0),cp=Math.cos(o.pitch||0),sp2=Math.sin(o.pitch||0),f=o.f||V.H*1.1,cr=Math.cos(o.roll||0),sr=Math.sin(o.roll||0),ox=V.W/2+(o.sx||0)*V.W,oy=V.H/2+(o.sy||0)*V.H;
+  const P=(x,y,z)=>{const dx=x-o.x,dy=y-o.y,dz=z-o.z,x1=dx*cy-dz*sy,z1=dx*sy+dz*cy,y2=dy*cp-z1*sp2,z2=dy*sp2+z1*cp;
+    if(z2<4)return null;const k=f/z2,a=x1*k,b=y2*k;return[ox+a*cr-b*sr,oy+a*sr+b*cr,k,z2];};
+  P.o=o;P.f=f;P.horizon=oy-f*Math.tan(o.pitch||0);return P;
+}
+function ppath(c,P,pts){const q=[];for(const p of pts){const r=P(p[0],p[1],p[2]);if(!r)return false;q.push(r);}c.beginPath();q.forEach((r,i)=>i?c.lineTo(r[0],r[1]):c.moveTo(r[0],r[1]));c.closePath();return q;}
+function pfill(c,P,pts,col){if(ppath(c,P,pts)){c.fillStyle=col;c.fill();}}
+/* PCUT: while set, solid shapes also punch themselves out of the light layer,
+   so a figure in front of a glow reads as a silhouette instead of being washed over */
+let PCUT=null;
+function cutOut(fn){if(!PCUT)return;PCUT.save();PCUT.globalCompositeOperation='destination-out';fn(PCUT);PCUT.restore();}
+/* a box: only the faces turned toward the camera are painted */
+function pbox(c,P,x0,x1,y0,y1,z0,z1,col){
+  const v=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]].map(p=>P(p[0],p[1],p[2]));
+  if(v.some(q=>!q))return;
+  const F=[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[4,5,1,0],[3,2,6,7]];c.fillStyle=col;
+  for(const f of F){const a=v[f[0]],b=v[f[1]],d=v[f[2]];const cr=(b[0]-a[0])*(d[1]-a[1])-(b[1]-a[1])*(d[0]-a[0]);if(cr>=0)continue;
+    c.beginPath();f.forEach((i,j)=>j?c.lineTo(v[i][0],v[i][1]):c.moveTo(v[i][0],v[i][1]));c.closePath();c.fill();
+    if(PCUT)cutOut(k=>{k.fillStyle='#000';k.fill(new Path2D(f.map((i,j)=>(j?'L':'M')+v[i][0].toFixed(1)+' '+v[i][1].toFixed(1)).join('')+'Z'));});}
+}
+/* flat figures stood on the floor at (x,z): o.view 'front'|'back'|'top' */
+function pfig(c,g,P,ch,x,z,o){const p=P(x,o&&o.y||0,z);if(!p)return null;o=o||{};
+  c.save();g.save();c.translate(p[0],p[1]);c.scale(p[2]*(o.s||1),p[2]*(o.s||1));g.setTransform(c.getTransform());
+  if(o.alpha!==undefined){c.globalAlpha=o.alpha;g.globalAlpha=o.alpha;}
+  let r=null;if(o.view==='top')figTop(c,o.kind||'kneel',0,0,1,o.ang||0,o.ink);
+  else{if(PCUT&&!o.ghost)cutOut(k=>{k.setTransform(c.getTransform());figFront(k,null,ch,Object.assign({},o,{noGlow:1}));});
+    if(o.rim){c.save();c.translate(o.rimDx||1.4,0);figFront(c,null,ch,Object.assign({},o,{ink:o.rim,noGlow:1}));c.restore();}
+    r=figFront(c,g,ch,o);}
+  c.restore();g.restore();return{p,r};}
+/* sky above a painted horizon */
+function psky(c,P,stops,below){const hz=P.horizon,top=hz-V.H*1.2;const gr=c.createLinearGradient(0,top,0,hz);stops.forEach(s=>gr.addColorStop(s[0],s[1]));
+  c.fillStyle=gr;c.fillRect(-V.W,-V.H,V.W*3,hz+V.H+2);c.fillStyle=below||stops[stops.length-1][1];c.fillRect(-V.W,hz,V.W*3,V.H*2);}
+/* a warm pool of light on the floor around (x,z) */
+function pglow(c,P,x,z,R,col,a){const p=P(x,0,z),px=P(x+R,0,z),pz=P(x,0,z+R);if(!p||!px||!pz)return;
+  const rx=Math.hypot(px[0]-p[0],px[1]-p[1]),ry=Math.max(4,Math.hypot(pz[0]-p[0],pz[1]-p[1]));
+  c.save();c.globalCompositeOperation='lighter';c.globalAlpha=a;c.translate(p[0],p[1]);c.scale(1,ry/rx);c.drawImage(glowSprite(col),-rx,-rx,rx*2,rx*2);c.restore();}
+/* living fire: stacked tongues, brightest at the root */
+function flame(c,g,x,y,s,col,t,a){if(a<=0)return;
+  g.save();g.globalCompositeOperation='lighter';g.globalAlpha=a*.8;g.drawImage(glowSprite(col),x-s*3.2,y-s*4,s*6.4,s*6);
+  for(let i=0;i<5;i++){const w=s*(1-i*.16),h=s*(2.4-i*.3)*(1+.12*Math.sin(t*9+i*2)),sway=Math.sin(t*6+i)*s*.18;
+    g.globalAlpha=a*(i<2?.55:.9);g.fillStyle=i<3?col:mixC(col,'#ffffff',.3+i*.15);g.beginPath();g.moveTo(x-w*.6,y);g.quadraticCurveTo(x-w*.7,y-h*.5,x+sway,y-h);g.quadraticCurveTo(x+w*.7,y-h*.5,x+w*.6,y);g.fill();}
+  g.restore();}
+
+/* ---------------- the High Temple courtyard, as a set ----------------
+   brazier at z=1100 in the middle, pillar rows either side, stairs up to
+   the gate at the far end.                                              */
+const TEMPLE={brz:[0,1100],pillarX:560,pillars:[300,620,940,1260,1580,1900],stairs:[2200,2500,200],gateZ:2560};
+function templeSet(c,g,P,o){
+  o=o||{};const ink=o.ink||INK,stone=o.stone||'#2a2622',line=o.line||'#3a342e',items=[];
+  psky(c,P,o.sky||[[0,'#050814'],[.6,'#141a36'],[1,'#3a3050']],o.ground||'#0b0a0c');
+  if(o.backdrop)o.backdrop(c,g,P);
+  // floor and its tiles
+  pfill(c,P,[[-700,0,-400],[700,0,-400],[700,0,2200],[-700,0,2200]],stone);
+  c.strokeStyle=line;c.lineWidth=1;
+  for(let x=-700;x<=700;x+=100){const a=P(x,0,Math.max(-400,(P.o.z||0)+30)),b=P(x,0,2200);if(a&&b){c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();}}
+  for(let z=-400;z<=2200;z+=100){const a=P(-700,0,z),b=P(700,0,z);if(a&&b){c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();}}
+  if(o.floorLight)o.floorLight(c,g,P);
+  // everything that stands up is depth-sorted with the figures
+  const X0=TEMPLE.pillarX;
+  for(const z of TEMPLE.pillars)for(const s of[-1,1])items.push({x:s*X0,z,d:()=>pbox(c,P,s*X0-35,s*X0+35,-520,0,z-35,z+35,ink)});
+  for(const s of[-1,1])items.push({x:s*(X0+200),z:1100,d:()=>{pbox(c,P,s*X0-70,s*X0+70,-570,-520,200,2000,ink);pbox(c,P,s*(X0+60),s*(X0+420),-610,-560,150,2050,ink);}});
+  const [s0,s1,sh]=TEMPLE.stairs;for(let i=0;i<8;i++){const z=s0+i*(s1-s0)/8;items.push({z:z+18,d:()=>{pbox(c,P,-260,260,-(i+1)*sh/8,0,z,s1+40,ink);if(o.stepEdge){const a=P(-260,-(i+1)*sh/8,z),b=P(260,-(i+1)*sh/8,z);if(a&&b){c.strokeStyle=o.stepEdge;c.lineWidth=Math.max(1,a[2]*3);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();}}}});}
+  const gz=TEMPLE.gateZ,gy=-sh;items.push({z:gz,d:()=>{for(const s of[-1,1])pbox(c,P,s*220-22,s*220+22,gy-380,gy,gz-22,gz+22,ink);
+    pbox(c,P,-310,310,gy-420,gy-385,gz-30,gz+30,ink);pbox(c,P,-250,250,gy-330,gy-310,gz-18,gz+18,ink);}});
+  const [bx,bz]=TEMPLE.brz;items.push({z:bz,d:()=>{pbox(c,P,bx-22,bx+22,-70,0,bz-22,bz+22,ink);pbox(c,P,bx-55,bx+55,-92,-70,bz-55,bz+55,ink);
+    if(o.fire>0){const p=P(bx,-92,bz);if(p)flame(c,g,p[0],p[1],p[2]*34,o.fireCol||'#ffc23a',gameT,o.fire);}
+    if(o.smoke){const p=P(bx,-92,bz);if(p){c.save();c.fillStyle='rgba(60,60,70,.35)';for(let i=0;i<6;i++){const u=((gameT*.3+i/6)%1);c.beginPath();c.arc(p[0]+Math.sin(u*6+i)*p[2]*20,p[1]-u*p[2]*260,p[2]*(12+u*40),0,TAU);c.fill();}c.restore();}}}});
+  if(o.figs)items.push(...o.figs);
+  for(const it of items){const q=P(it.x||0,it.y||0,it.z);it.dd=q?q[3]:(it.z-(P.o.z||0));}
+  items.sort((a,b)=>b.dd-a.dd);const pc=PCUT;if(o.occlude)PCUT=g;try{for(const it of items)it.d();}finally{PCUT=pc;}
+}
+
+/* =======================================================================
+   MOVIES — long lore finishers. Built on the cinematic engine, plus:
+   drawn shots (any camera angle, painted perspective), subtitles, a
+   selective-colour flashback grade, film grain, a 2.39:1 letterbox and a
+   score. They play only when a rivalry is settled on the right ground.
+   ======================================================================= */
+const RIVALS=[
+ {a:'sol',d:'morrow',stage:'monastery',movie:'lastDawn',name:'THE LAST DAWN',hint:'Win the deciding round against Morrow with HUNDRED SUNS, at the High Temple.'},
+];
+const MOVIES={};
+function rivalMovieFor(a,d){if(GAME.demo||!STG)return null;const r=RIVALS.find(r=>r.a===a.ch.id&&r.d===d.ch.id&&STG.id===r.stage);return r&&MOVIES[r.movie]?r:null;}
+const SPEAKERS={elder:{name:'ELDER',col:'#e8c888'}};
+function speaker(k){const c=ROSTER.find(r=>r.id===k);return c?{name:c.name,col:c.col}:SPEAKERS[k]||{name:String(k).toUpperCase(),col:'#bbbbbb'};}
+
+/* ---------------- grading ---------------- */
+let _grain=null;
+function grain(a){if(!_grain){_grain=document.createElement('canvas');_grain.width=_grain.height=256;const g=_grain.getContext('2d'),d=g.createImageData(256,256);
+  for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=Math.random()<.5?90:0;}g.putImageData(d,0,0);}
+  X.save();X.setTransform(1,0,0,1,0,0);X.globalAlpha=a;const ox=-rnd(256),oy=-rnd(256);for(let x=ox;x<V.W;x+=256)for(let y=oy;y<V.H;y+=256)X.drawImage(_grain,x,y);X.restore();}
+/* the world drains to warm sepia; light (drawn later, on the glow layer) keeps its colour */
+function gradePast(){X.save();X.setTransform(1,0,0,1,0,0);X.globalCompositeOperation='saturation';X.fillStyle='#808080';X.fillRect(0,0,V.W,V.H);
+  X.globalCompositeOperation='multiply';X.fillStyle='#cdb48c';X.fillRect(0,0,V.W,V.H);X.restore();}
+function movieBar(){return Math.max(0,(V.H-V.W/2.39)/2);}
+function drawSub(sub,t,d,at){const a=clamp((t-at)/.3,0,1)*clamp((d-t)/.3,0,1);if(a<=0)return;const S=US(),sp=speaker(sub[0]),bar=movieBar(),y=bar>36*S?V.H-bar/2:V.H-46*S;
+  txt(sp.name,V.W/2,y-11*S,8.5,{w:700,al:'center',track:2,c:sp.col,a});txt(sub[1],V.W/2,y+11*S,16,{w:400,al:'center',c:'#f3efe6',a});}
+function moviePost(C,sh){
+  X.setTransform(1,0,0,1,0,0);X.globalAlpha=1;X.globalCompositeOperation='source-over';
+  if(sh.grade==='past')grain(.07);
+  let fa=0;if(sh.fin)fa=Math.max(fa,1-C.t/sh.fin);if(sh.fout)fa=Math.max(fa,(C.t-(sh.d-sh.fout))/sh.fout);
+  if(fa>0){X.globalAlpha=clamp(fa,0,1);X.fillStyle=sh.foutCol||'#000';X.fillRect(0,0,V.W,V.H);X.globalAlpha=1;}
+  const bar=movieBar();X.fillStyle='#000';X.fillRect(0,0,V.W,bar);X.fillRect(0,V.H-bar,V.W,bar);
+  if(sh.sub)drawSub(sh.sub,C.t,sh.d,sh.subAt===undefined?.25:sh.subAt);
+  if(sh.subs){const s=sh.subs.find(s=>C.t>=s[2]-.05&&C.t<s[3]);if(s)drawSub(s,C.t,s[3],s[2]);}
+  if(sh.card)sh.card(Math.min(1,C.t/sh.d),C.t);
+  if(C.story)txt('J  NEXT   ·   ESC  SKIP',V.W-28*US(),bar>30?bar/2+4*US():30*US(),8,{w:600,al:'right',track:2,c:'#5a5a5a'});
+  if(C.skipArm!==undefined&&C.rt-C.skipArm<2.5)txt('PRESS AGAIN TO SKIP',V.W-28*US(),bar>30?bar/2+4*US():30*US(),8.5,{w:600,al:'right',track:2,c:'#8a8a8a'});
+}
+/* a shot drawn by hand for its own camera angle */
+function renderDrawnShot(C,sh){
+  const u=Math.min(1,C.t/sh.d);
+  X.setTransform(1,0,0,1,cam.shx,cam.shy);X.globalAlpha=1;X.globalCompositeOperation='source-over';G.setTransform(1,0,0,1,cam.shx,cam.shy);G.clearRect(-50,-50,V.W+100,V.H+100);
+  sh.draw(X,G,u,C.t,C.S);
+  X.setTransform(1,0,0,1,0,0);G.setTransform(1,0,0,1,0,0);
+  drawPartsMain(X,'#222');drawEffs(X,false);drawPartsGlow(G);drawEffs(G,true);
+  if(sh.grade==='past')gradePast();
+  X.save();X.globalCompositeOperation='lighter';X.drawImage(GL,0,0);X.restore();bloom(POST.bloom);X.drawImage(VIG,0,0,V.W,V.H);
+}
+/* fighters drawn from other angles, lit from one side */
+function rimFront(c,g,ch,o,rim,dx){c.save();c.translate(dx,0);figFront(c,null,ch,Object.assign({},o,{ink:rim,noGlow:1}));c.restore();return figFront(c,g,ch,o);}
+
+/* ---------------- score ---------------- */
+function _padVoice(fr,dur,g,type,flt,vib){if(!AU.ctx||AU.skip)return;const a=AU.ctx,t=a.currentTime,out=a.createGain();
+  out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(g,t+Math.min(2.2,dur*.3));out.gain.setValueAtTime(g,t+dur*.72);out.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  const f=a.createBiquadFilter();f.type=flt?'bandpass':'lowpass';f.frequency.value=flt||1300;if(flt)f.Q.value=3;out.connect(f);f.connect(AU.master);f.connect(AU.revIn);
+  let lfo=null;if(vib){lfo=a.createOscillator();lfo.frequency.value=5.2;const lg=a.createGain();lg.gain.value=vib;lfo.connect(lg);lfo.start(t);lfo.stop(t+dur+.1);lfo._g=lg;}
+  for(const fq of fr)for(const d of[-7,7]){const o=a.createOscillator();o.type=type||'sawtooth';o.frequency.value=fq;o.detune.value=d;if(lfo)lfo._g.connect(o.detune);const og=a.createGain();og.gain.value=.3/fr.length;o.connect(og);og.connect(out);o.start(t);o.stop(t+dur+.1);}}
+SFX.pad=(fr,dur,g)=>_padVoice(fr,dur,g||.05,'sawtooth',0,0);
+SFX.choir=(fr,dur,g)=>{_padVoice(fr,dur,g||.05,'sawtooth',820,14);_padVoice(fr.map(f=>f*2),dur,(g||.05)*.5,'triangle',1200,10);};
+SFX.rain=dur=>nz(dur,{type:'highpass',f0:2600,g:.07,a:.5});
+SFX.sizzle=()=>{nz(.7,{f0:3200,f1:700,q:.8,g:.14});nz(1.4,{type:'lowpass',f0:600,f1:70,g:.22,wet:1});};
+SFX.wind=dur=>nz(dur,{type:'bandpass',f0:300,f1:700,q:.6,g:.06,a:dur*.4});
+
+/* ---------------- THE LAST DAWN — Sol finishes Morrow at the High Temple ----------------
+   Morrow drowned the High Temple nine years ago: thirty-one monks, and the Dawn
+   Flame they kept alive through the Long Dusk. Sol was the one she left breathing. */
+const MONK=Object.assign({},ROSTER.find(c=>c.id==='sol'),{id:'monk',name:'MONK',col:'#f0c878',eyes:'calm'});delete MONK._poses;
+const NIGHT=[[0,'#020308'],[.55,'#0c1128'],[1,'#282244']],DAWN=[[0,'#140c26'],[.45,'#5a3052'],[.78,'#e0845a'],[1,'#ffd690']];
+function monkRing(){const m=[];for(let i=0;i<12;i++){const a=i/12*TAU;m.push({x:Math.cos(a)*190,z:1100+Math.sin(a)*190,a});}
+  for(let i=0;i<19;i++){const a=i/19*TAU+.17;m.push({x:Math.cos(a)*305,z:1100+Math.sin(a)*305,a});}
+  m.forEach((q,i)=>{q.j=hash(i*7.3)*1.6-.8;q.dx=(hash(i*3.1)-.5)*50;q.dz=(hash(i*5.7)-.5)*50;});return m;}
+function topFig(c,P,x,z,kind,s,faceX,faceZ,col){const q=P(x,0,z),q2=P(faceX,0,faceZ);if(!q||!q2)return;figTop(c,kind,q[0],q[1],q[2]*s,Math.atan2(q2[0]-q[0],-(q2[1]-q[1])),col);}
+MOVIES.lastDawn=(A,D)=>{const gold='#ffc23a',vio=D.ch.col,S0={ring:monkRing()};
+ const push=Q('monk',{fx:[62,-40],y:30,lean:.5,ch:.1,aF:[1.52,0,0],aB:[1.62,0,0],gF:1,gB:1});
+ return{movie:1,title:null,dmg:99999,hits:31,shots:[
+  // 1 — his eyes open
+  {d:2.8,fin:.8,draw(X,G,u){drawEyesClose(X,G,A.ch,E.io(seg01(u,.18,.62)),{zoom:.92+u*.12,brow:.25});},sub:['sol','Thirty-one brothers.'],subAt:.9,
+   ev:[[.05,()=>{SFX.bell();SFX.pad([73.4,110,146.8],18,.045);}],[1.3,()=>SFX.heart()]]},
+  // 2 — flashback, from above: the ring around the Dawn Flame
+  {d:3,grade:'past',draw(X,G,u){const P=pcam({x:0,y:-1560+u*180,z:1100,pitch:PI/2,yaw:.15+u*.28,f:V.H*1.25});
+     templeSet(X,G,P,{fire:1,sky:NIGHT,floorLight:(c,g,P)=>pglow(c,P,0,1100,560,'#ffb040',.6),figs:S0.ring.map(m=>({x:m.x,z:m.z,d:()=>topFig(X,P,m.x,m.z,'kneel',1,0,1100)}))});},
+   sub:['sol','Nine years of dusk. They kept the last dawn burning.']},
+  // 3 — flashback, low angle up the stairs: she is at the gate, the night behind her burning violet
+  {d:3,grade:'past',draw(X,G,u){const P=pcam({x:0,y:-30,z:1700+u*80,pitch:-.2,f:V.H*1.1}),gy=-TEMPLE.stairs[2],gz=TEMPLE.gateZ;
+     templeSet(X,G,P,{fire:0,sky:NIGHT,occlude:1,stepEdge:'#3a3448',backdrop:(c,g,P)=>{
+         const q=P(0,gy-160,2900);if(q){g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.75;const r=q[2]*330;g.drawImage(glowSprite(vio),q[0]-r,q[1]-r,r*2,r*2);
+           g.globalAlpha=.35;pfill(g,P,[[-198,gy,gz+30],[198,gy,gz+30],[198,gy-385,gz+30],[-198,gy-385,gz+30]],vio);g.restore();}},
+       figs:[{z:2520,d:()=>pfig(X,G,P,D.ch,0,2520,{y:gy,pose:'stand',hot:.8,rim:mixC(vio,'#ffffff',.45),rimDx:1.1})}]});},
+   sub:['morrow','Light is wasted on the faithful.'],ev:[[.2,()=>{SFX.hex();SFX.wind(3);}]]},
+  // 4 — flashback, over the monks' shoulders: the flame between them and her
+  {d:2.8,grade:'past',draw(X,G,u){const P=pcam({x:-30,y:-235,z:210+u*50,pitch:.1,yaw:.04,f:V.H*1.0});const mz=1660-u*150,mx=190;
+     const monk=(x,z,pose)=>({x,z,d:()=>pfig(X,G,P,MONK,x,z,{back:true,pose,rim:'#8a6a40',rimDx:1.2,still:1})});
+     templeSet(X,G,P,{fire:1.3,sky:NIGHT,occlude:1,floorLight:(c,g,P)=>{pglow(c,P,0,1100,520,'#ffb040',.7);pglow(c,P,mx,mz,300,vio,.35);},
+       figs:[monk(-240,560,'loose'),monk(255,540,'loose'),monk(-50,790,'stand'),
+         {x:mx,z:mz,d:()=>{const q=P(mx,-120,mz);if(q){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.55;const r=q[2]*150;G.drawImage(glowSprite(vio),q[0]-r,q[1]-r,r*2,r*2);G.restore();}
+           pfig(X,G,P,D.ch,mx,mz,{pose:'stand',hot:.7,rim:mixC(vio,'#ffffff',.3),rimDx:-1});}}]});},
+   sub:['elder','This flame is not yours, witch.']},
+  // 5 — flashback, side on: she walks through them
+  {d:3,grade:'past',impCol:vio,noFront:1,bg:bgStageTint('#040212',.72),
+   enter(S){A.hide=1;S.m=[];for(let i=0;i<5;i++){const m=puppet(MONK,0);m.x=-330+i*150;m.y=0;m.face=1;m.pose=copyPose(m.P.stance);m.alpha=1;S.m.push(m);}CINE.extra=S.m;
+     CU.at(D,430,0,-1);D.alpha=1;D.hide=0;S.imp=-9;},
+   upd(u,t,S,dt){D.vx=-190;D.x=430-190*t;D.face=-1;D.pose=gaitPose(D,1,dt);
+     for(const m of S.m){if(!m.dead&&D.x<m.x+75){m.dead=1;m.vx=-240;m.vy=-320;m.y=-1;const c=CU.chest(m);burstFX(c[0],c[1],-1,vio,1);ring(c[0],c[1],vio,8,70,.3,5);bolt(c[0]+40,c[1]-60,c[0],c[1],vio,.8);SFX.hit(.8,'hex');S.imp=t;}
+       if(m.dead){fly(m,dt,2600,1);m.pose=m.y<-5?m.P.tumble:m.P.down;}}
+     CU.cam(D.x-50,-130,1.3,.03);},
+   impDyn(S,t){return t-S.imp<.035?'ai':null;},preGlow:()=>gradePast(),
+   exit(){CINE.extra=[];}},
+  // 6 — flashback, close on the brazier: her hand closes over the flame
+  {d:3,grade:'past',draw(X,G,u,t){const W=V.W,H=V.H,cx=W*.46,by=H*.7,fire=u<.55?1:1-seg01(u,.55,.66),shut=seg01(u,.5,.6);
+     const g1=X.createLinearGradient(0,0,0,H);g1.addColorStop(0,'#0a0908');g1.addColorStop(1,'#16110c');X.fillStyle=g1;X.fillRect(0,0,W,H);
+     // the flame lights the wall behind: that is what the hand reads against
+     const wl=X.createRadialGradient(cx,by-H*.18,0,cx,by-H*.18,H*.75);wl.addColorStop(0,`rgba(255,196,120,${.62*fire+.04})`);wl.addColorStop(.55,`rgba(160,110,60,${.22*fire})`);wl.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=wl;X.fillRect(0,0,W,H);
+     X.fillStyle=INK;X.fillRect(W*.04,0,H*.1,H);X.fillRect(W*.86,0,H*.13,H); // pillars, near
+     X.globalAlpha=.8;X.fillRect(W*.2,0,H*.05,H);X.fillRect(W*.74,0,H*.05,H);X.globalAlpha=1;
+     const fc=mixC(gold,vio,seg01(u,.47,.56));flame(X,G,cx,by,H*.11*(1-shut*.5),fc,t,fire);
+     X.fillStyle=INK;X.beginPath();X.moveTo(cx-H*.42,by-H*.02);X.quadraticCurveTo(cx,by+H*.05,cx+H*.42,by-H*.02);X.lineTo(cx+H*.3,by+H*.2);X.lineTo(cx-H*.3,by+H*.2);X.closePath();X.fill();X.fillRect(cx-H*.06,by+H*.2,H*.12,H*.3);
+     const k=E.o(seg01(u,.14,.46)),lift=E.io(seg01(u,.68,1)),th=PI-.5,sc=H/118,hx1=cx-H*.12,hy1=by-H*.33;
+     const hx=lerp(hx1-W*.4,hx1,k)-lift*H*.06,hy=lerp(hy1-H*.75,hy1,k)-lift*H*.22,open=1-E.io(seg01(u,.5,.6));
+     const arm=c=>{c.save();c.translate(hx,hy);c.rotate(th);c.translate(-hx,-hy);
+       c.save();c.translate(hx,hy);c.scale(sc,sc);c.fillStyle=INK;c.beginPath();c.moveTo(-13,100);c.lineTo(13,100);c.lineTo(46,330);c.quadraticCurveTo(0,350,-46,330);c.closePath();c.fill(); // her sleeve
+       c.strokeStyle=INK;c.lineWidth=7;for(let i=0;i<3;i++){c.beginPath();c.moveTo(-40+i*34,318);c.quadraticCurveTo(-30+i*34,360+Math.sin(t*3+i)*6,-24+i*34,392);c.stroke();}c.restore(); // ragged hem
+       shadowHand(c,hx,hy,sc,open,false);c.restore();};
+     arm(X);G.save();G.globalCompositeOperation='destination-out';arm(G);G.restore();
+     if(shut>.5){const fx=hx+30*sc*Math.sin(th),fy=hy-30*sc*Math.cos(th),a=(shut-.5)*2*(1-lift*.3);
+       // light leaks between the fingers of the closed fist
+       G.save();G.globalCompositeOperation='lighter';G.globalAlpha=a*.7;const r=H*.09;G.drawImage(glowSprite(vio),fx-r,fy-r,r*2,r*2);
+       G.strokeStyle=mixC(vio,'#ffffff',.5);G.lineWidth=1.8;G.globalAlpha=a*.9;G.translate(fx,fy);G.rotate(th);for(let i=0;i<3;i++){const ox=(i-1)*H*.022;G.beginPath();G.moveTo(ox,-H*.03);G.lineTo(ox+H*.004,-H*.005);G.stroke();}G.restore();
+       if(rnd()<.5)pt({x:fx+rnd(20,-20),y:fy+rnd(20,-20),vx:rnd(40,-40),vy:rnd(40,-60),l:rnd(.8,.3),s:rnd(2.5,1.2),c:vio,t:'ember',g:-30});}
+     if(u>.6){const sa=seg01(u,.6,.75);for(let i=0;i<7;i++){const q=((t*.3+i/7)%1),x=cx+Math.sin(q*5+i)*H*.04,y=by-q*H*.55,r=H*(.03+q*.09),sg=X.createRadialGradient(x,y,0,x,y,r);
+       sg.addColorStop(0,`rgba(120,114,106,${.2*sa*(1-q)})`);sg.addColorStop(1,'rgba(120,114,106,0)');X.fillStyle=sg;X.fillRect(x-r,y-r,r*2,r*2);}}},
+   sub:['sol','She took it with her bare hand.'],subAt:1.3,ev:[[.5,()=>SFX.dash()],[1.55,()=>SFX.sizzle()]]},
+  // 7 — flashback, from above: the ring is broken; one of them is still kneeling
+  {d:3,grade:'past',fout:.4,foutCol:'#ffffff',draw(X,G,u){const P=pcam({x:0,y:-1650-u*380,z:1100,pitch:PI/2,yaw:.42,f:V.H*1.25});
+     templeSet(X,G,P,{fire:0,smoke:1,sky:NIGHT,figs:[...S0.ring.map(m=>({x:m.x,z:m.z,d:()=>topFig(X,P,m.x+m.dx,m.z+m.dz,'lie',.9,m.x*1.6+m.j*80,1100+(m.z-1100)*1.6)})),
+       {x:40,z:1010,d:()=>topFig(X,P,40,1010,'kneel',.78,0,1100)}]});
+     X.strokeStyle='rgba(200,210,230,.22)';X.lineWidth=1;for(let i=0;i<70;i++){const x=(hash(i*3.3)*V.W+gameT*40)%V.W,y=((hash(i*7.1)+gameT*1.6)%1)*V.H;X.beginPath();X.moveTo(x,y);X.lineTo(x-4,y+22);X.stroke();}},
+   sub:['sol','I was the only one she left breathing.'],ev:[[.1,()=>SFX.rain(3)]]},
+  // 8 — present: her face, lit from the side by his light
+  {d:2.8,fin:.2,draw(X,G,u,t){const W=V.W,H=V.H;const P=pcam({x:-60,y:-150,z:200,pitch:-.02,yaw:.25,f:V.H*.9});templeSet(X,G,P,{fire:0,sky:DAWN});
+     X.fillStyle='rgba(220,150,110,.28)';X.fillRect(0,0,W,H);
+     const sc=H/118*(1+u*.04);X.save();G.save();X.translate(W*.62,H*1.78+(1-u)*H*.02);X.scale(sc,sc);G.setTransform(X.getTransform());rimFront(X,G,D.ch,{pose:'stand',look:-1,hot:.35,still:0},'#ffcf70',-2.2);X.restore();G.restore();
+     if(rnd()<.5)pt({x:rnd(W*.45),y:rnd(H),vx:rnd(40,10),vy:-rnd(30,5),l:rnd(2,1),s:rnd(3,1.5),c:gold,t:'ember',g:-10});},
+   sub:['morrow','...You kept one ember.'],subAt:.7,ev:[[.3,()=>SFX.heart()]]},
+  // 9 — worm's-eye: a sun forms between his palms
+  {d:3,draw(X,G,u,t,S){const P=pcam({x:0,y:-14,z:-30-u*40,pitch:-.6,f:V.H*.95});
+     templeSet(X,G,P,{fire:0,sky:DAWN,figs:[{z:230,d:()=>{const f=pfig(X,G,P,A.ch,0,230,{pose:'palms',hot:1});if(!f||!f.r)return;const k=f.p[2],h=f.r.hands,px=f.p[0]+(h[0][0]+h[1][0])/2*k,py=f.p[1]+(h[0][1]+h[1][1])/2*k-6*k,r=k*lerp(8,40,E.io(u));
+       G.save();G.globalCompositeOperation='lighter';G.drawImage(glowSprite(gold),px-r*3,py-r*3,r*6,r*6);G.drawImage(glowSprite(gold,1),px-r,py-r,r*2,r*2);G.restore();S.orb=[px,py];}}]});
+     if(S.orb&&rnd()<.9){const a=rnd(TAU),r=rnd(260,140);pt({x:S.orb[0]+Math.cos(a)*r,y:S.orb[1]+Math.sin(a)*r,vx:-Math.cos(a)*r*2.6,vy:-Math.sin(a)*r*2.6,l:.38,s:2.4,c:gold,t:'spark',g:0,dr:.5});}},
+   sub:['sol','No. I kept all of them.'],subAt:.9,ev:[[.2,()=>SFX.charge(1.4)]]},
+  // 10 — his brothers stand up behind him
+  {d:3,draw(X,G,u){const P=pcam({x:0,y:-135,z:-260+u*90,pitch:.03,f:V.H*1.0});const pose=u>.84?'push':'palms',figs=[];
+     for(let r=0;r<4;r++)for(let i=0;i<(r===3?7:8);i++){const n=r*8+i,x=(i-(r===3?3:3.5))*118+(r%2)*30,z=560+r*185,a=clamp((u*1.7-n/31*.95)*4,0,1);
+       if(a>0)figs.push({x,z,d:()=>{X.save();X.globalCompositeOperation='lighter';pfig(X,G,P,MONK,x,z,{pose,ink:'#a8761c',alpha:a*.62,noGlow:1,still:1});X.restore();const q=P(x,-168,z);if(q){G.save();G.globalAlpha=a*.5;const rr=q[2]*26;G.drawImage(glowSprite(gold),q[0]-rr,q[1]-rr,rr*2,rr*2);G.restore();}}});}
+     figs.push({z:260,d:()=>pfig(X,G,P,A.ch,0,260,{pose,hot:1})});
+     templeSet(X,G,P,{fire:0,sky:DAWN,figs,floorLight:(c,g,P)=>pglow(c,P,0,700,700,gold,.35*u)});},
+   ev:[[.1,()=>SFX.choir([146.8,185,220,293.7],7,.05)],[2.75,()=>SFX.swing(.7)]]},
+  // 11 — side on: the strike, and all of them strike with him
+  {d:1.35,speed:[[0,.1],[.12,.1],[.28,1,'i'],[1.35,1]],bg:bgBurst(gold,'#140a00',.3,()=>CU.chest(A)),noFront:1,
+   enter(S){A.hide=0;D.hide=0;CINE.extra=[];CU.at(A,-60,0,1);A.pose=push;A.hot=1;CU.at(D,70,0,-1);D.pose=D.P.hurtH;const c=CU.chest(D);SFX.impact();shake(24);S.bx=A.x+64;S.by=c[1];S.bt=gameT;
+     burstFX(c[0],c[1],1,gold,2);ring(c[0],c[1],gold,10,280,.6,10);ring(c[0],c[1],'#ffffff',10,180,.4,5);},
+   imp:[[0,.012,'w'],[.012,.024,'a'],[.024,.036,'b']],
+   upd(u,t,S,dt){if(t>.12&&!S.go){S.go=1;D.vx=1150;D.vy=-240;D.y=-1;}if(S.go){D.vx*=Math.pow(.2,dt);fly(D,dt,2200,1);D.pose=D.y<-5?D.P.tumble:D.P.down;}
+     CU.cam(lerp(40,260,E.io(seg01(u,.1,.8))),-120,lerp(1.5,1.0,E.o(u)),0);},
+   glow(g){const S=CINE.S;for(let i=1;i<=10;i++){g.save();g.translate(A.x-i*24,-i*7);g.scale(1-i*.035,1-i*.035);g.globalAlpha=Math.max(0,.34-i*.026);drawBody(g,MONK,push,1,gameT,{lite:1,nosim:1,inkCol:mixC(gold,'#000000',.25)});g.restore();}
+     const a=Math.max(0,1-(gameT-S.bt)*1.3);if(a<=0)return;const L=900;g.globalAlpha=a;const gr=g.createLinearGradient(S.bx,0,S.bx+L,0);gr.addColorStop(0,'rgba(255,255,255,.95)');gr.addColorStop(.3,rgba(gold,.8));gr.addColorStop(1,rgba(gold,0));
+     g.fillStyle=gr;g.beginPath();g.moveTo(S.bx,S.by-30);g.lineTo(S.bx+L,S.by-120);g.lineTo(S.bx+L,S.by+120);g.lineTo(S.bx,S.by+30);g.fill();g.globalAlpha=1;}},
+  // 12 — from above: the stolen dawn leaves her
+  {d:2.7,fout:.35,foutCol:'#fff4d8',draw(X,G,u,t){const P=pcam({x:0,y:-1250-u*120,z:1100,pitch:PI/2,yaw:-.25,f:V.H*1.2});
+     templeSet(X,G,P,{fire:0,sky:DAWN,stone:'#3a3028',line:'#4a3e32',floorLight:(c,g,P)=>pglow(c,P,60,1150,520,gold,.3+u*.3),figs:[{x:60,z:1150,d:()=>topFig(X,P,60,1150,'lie',1,-80,1400)}]});
+     const q=P(60,-30-E.i2(u)*1150,1130);if(q){const r=Math.min(V.W,q[2]*40);G.save();G.globalCompositeOperation='lighter';G.drawImage(glowSprite(gold),q[0]-r*3,q[1]-r*3,r*6,r*6);G.drawImage(glowSprite(gold,1),q[0]-r,q[1]-r,r*2,r*2);G.restore();}},
+   ev:[[.3,()=>SFX.bell()]]},
+  // 13 — the first sunrise in nine years
+  {d:3.4,fout:1.0,draw(X,G,u,t){sunriseDraw(X,G,u,t,A.ch,{pagoda:1,ember:gold});},
+   sub:['sol','Rest now, brothers. The dawn is home.'],subAt:.6,ev:[[.1,()=>SFX.pad([146.8,185,220,293.7],6,.05)]]},
+  // 14 — title
+  {d:1.7,fin:.3,fout:.5,draw(X){X.fillStyle='#000';X.fillRect(0,0,V.W,V.H);},
+   card(u,t){const a=clamp(t*3,0,1)*clamp((1.7-t)/.5,0,1);txt('THE LAST DAWN',V.W/2,V.H/2,34,{w:200,al:'center',track:2,c:'#f2e6c8',a});txt('SOL  ·  MORROW',V.W/2,V.H/2+28*US(),9,{w:600,al:'center',track:2,c:'#b08a4a',a});}},
+ ]};};
+
+/* =======================================================================
+   LORE — the world, the eight shadows, their rivalries and their stories.
+   A line is [speaker, text, shot]. Shots: (none) a bust, shot-reverse-shot
+   · 'e' eyes · 'l' low angle · 'w' side-on two-shot · and for narration
+   'dusk' 'embers' 'gate' 'sun' 'sunv' 'forge' 'dark' 'vista'.
+   ======================================================================= */
+const LORE_WORLD=[
+ {k:'THE LONG DUSK',t:'Nine years ago the sun stopped at the edge of the world. It has not risen since, and it has not set. The sky is one endless evening, and against it everything that lived in its light has become a shadow of itself.'},
+ {k:'EMBERS',t:'Every shadow keeps one ember: the last colour it had. It burns in the eyes, along a blade, in a closed fist. Beat a shadow and its ember can be taken. Lose yours and you are only dark.'},
+ {k:'THE LAST GATE',t:'At the end of the road of graves stands a gate that no one built. Carry enough embers through it, the old stories say, and the sun will remember how to rise. It opens for one shadow at a time. Its keeper decides which. One man has gone through and walked back out.'},
+ {k:'THE DAWN FLAME',t:'The monks of the High Temple lit a fire from the last true sunrise and kept it burning through the Dusk. Thirty-one of them knelt around it in shifts, for nine years, until the night a witch walked up their stairs.'},
+];
+const LORE={
+ ashen:{rival:'vex',t:'A general of Ashfield. On the first night of the Dusk someone opened the city gates from the inside, and he died on the burning field holding them. He went through the Last Gate. Then he walked back out, the only one who ever has. His ember is the red of that fire. He is looking for whoever turned the key.'},
+ vex:{rival:'ashen',t:'Nobody has seen her face and lived to describe it. Nine years ago she was paid to open the gates of Ashfield. She did, and she was paid. She did not know about the fire. She tells herself that it does not matter. She has stopped sleeping.'},
+ goliath:{rival:'bolt',t:'The forge at the Crucible was the last fire that never cooled, fed by a storm the smiths had caged beneath it. They hammered Goliath out of slag to guard it. When the storm was stolen, the forge began to die, and the smiths with it. He was made for one job. He means to finish it.'},
+ sol:{rival:'morrow',t:'The youngest monk of the High Temple. The night Morrow came for the Dawn Flame, thirty-one monks knelt around it and did not move. She left him breathing so that someone would remember. He remembers. He has learned to make light in his bare hands.'},
+ morrow:{rival:'sol',t:'The lights you follow across the Hollow Mire are embers she has taken. She believes the sun will not come back for prayers, only for whoever gathers enough light to force the Gate. The Dawn Flame burns inside her now. She means to be the one it rises for.'},
+ grim:{rival:'rin',t:'Keeper of the Last Gate. He does not fight to win; he fights to weigh. Every shadow that reaches the Gate is measured against him, and none has been found heavy enough. One man went through and came back out. That has never happened before, and Grim intends to correct it.'},
+ bolt:{rival:'goliath',t:'A forge hand at the Crucible who broke the storm\'s cage to see what was inside. It struck him in the chest and stayed there. He left the forge dying behind him and climbed to Zenith, where storms are born, to find out how much more he can hold.'},
+ rin:{rival:'grim',t:'On Petal Hill the blossoms have been falling for nine years without a single branch going bare. Her sister Hana carried the hill\'s embers to the Last Gate to buy back the sun. The Gate took them. It kept her too. Rin has come to take her home.'},
+};
+const RIVALRY=[['sol','morrow','THE DAWN FLAME'],['ashen','vex','THE GATES OF ASHFIELD'],['bolt','goliath','THE STOLEN STORM'],['rin','grim','HANA'],['grim','ashen','THE ONE WHO RETURNED']];
+function rivalryOf(a,b){const r=RIVALRY.find(r=>(r[0]===a&&r[1]===b)||(r[0]===b&&r[1]===a));return r?r[2]:null;}
+
+const PROLOGUE=[
+ ['narr','Nine years ago the sun stopped at the edge of the world.','dusk'],
+ ['narr','Everything that lived in its light became a shadow. Every shadow kept one ember.','embers'],
+ ['narr','Carry enough of them through the Last Gate, and the sun will rise again.','gate'],
+ ['narr','The Gate opens for one shadow at a time.','gate'],
+];
+/* each fighter: a prologue, four chapters, an ending */
+const STORY_OF={
+ ashen:{pro:[['ashen','I died on that field. It did not keep me.','e'],['ashen','Someone opened the gates that night. I will know whose hand it was.']],
+  ch:[
+   {op:'bolt',stage:'storm',title:'THE STORM ROAD',pre:[['bolt','Hey. Big sword. You look like you hit hard.'],['ashen','Stand aside.'],['bolt','Nah. I climbed all this way for someone who hits hard.','l'],['ashen','Then I will not keep you waiting.']],
+    win:[['ashen','You fight like a man with nothing to lose. Find something.']]},
+   {op:'rin',stage:'blossom',title:'PETAL HILL',pre:[['rin','You came up the Gate road. I can smell it on you.'],['ashen','I walked out of it.'],['rin','Out? Nobody walks out. My sister is still in there.','e'],['ashen','Then do not go looking for the way.'],['rin','You are going to show me. Even if I have to beat it out of you.']],
+    win:[['ashen','Go home, lancer. The Gate does not give back what it takes.']]},
+   {op:'vex',stage:'dusk',title:'THE GATES OF ASHFIELD',pre:[['vex','You should not be standing.'],['ashen','You should not have opened the gates.','e'],['vex','It was a contract. A key, a door, a purse of silver.'],['ashen','Forty thousand people.','w'],['vex','...I did not know about the fire.'],['ashen','Neither did they.','e']],
+    win:[['vex','Finish it, then.'],['ashen','No. You will carry it, the way I have.']]},
+   {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','You were weighed once, general. You left before the scales settled.','l'],['ashen','I had unfinished business.'],['grim','And now?'],['ashen','Now it is finished. Open the Gate.'],['grim','Not for you. Never again for you.','e']],
+    win:[['grim','Go, then. See what waits for a man who has already died.']]},
+  ],
+  end:[['narr','He carried the embers of Ashfield through the Gate a second time.','gate'],['ashen','Forty thousand embers. Let them see it.','e'],['narr','The sun rose over Ashfield. Nobody walked back out.','sun0']]},
+ vex:{pro:[['vex','Nine years, and I still smell the smoke.','e'],['vex','A dead man is walking the roads, asking about a key. It is time I stopped running.']],
+  ch:[
+   {op:'goliath',stage:'forge',title:'THE CRUCIBLE',pre:[['goliath','Thief.','l'],['vex','Not this time. I am only passing through.'],['goliath','Everyone who passes through takes something.'],['vex','Then I will take my leave.','e']],
+    win:[['vex','Guard your forge, big one. I was never here.']]},
+   {op:'sol',stage:'monastery',title:'THE HIGH TEMPLE',pre:[['sol','You walk like someone who has done this before.'],['vex','Done what?'],['sol','Walked into a sacred place uninvited.','e'],['vex','Your temple was empty when I got here, monk.'],['sol','It was not always.']],
+    win:[['vex','Whatever emptied your temple, it was not me.'],['sol','I know. I only needed to be sure.']]},
+   {op:'ashen',stage:'dusk',title:'THE GATES OF ASHFIELD',pre:[['ashen','Nine years I have looked for you.'],['vex','You found me. I opened your gates.','w'],['ashen','Why?','e'],['vex','Silver. I did not ask what it was for.'],['vex','I have been asking every night since.','e'],['ashen','Then let me answer.']],
+    win:[['vex','I cannot give them back. I can only stop running.'],['ashen','...Then walk to the Gate. Carry what you owe.']]},
+   {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','An assassin at my door. You carry a great deal that is not yours.'],['vex','Forty thousand embers. I came to give them back.'],['grim','Guilt is not a key.','l'],['vex','No. But I have always been good with locks.','e']],
+    win:[['grim','Then open it.']]},
+  ],
+  end:[['narr','She had opened one gate in her life, for silver.','gate'],['narr','She opened the last one for nothing at all.','gate'],['narr','The sun rose over Ashfield. No one ever saw who let it in.','sun0']]},
+ goliath:{pro:[['narr','The forge at the Crucible is going cold.','forge'],['goliath','The storm was stolen. I will bring it home.','e']],
+  ch:[
+   {op:'rin',stage:'blossom',title:'PETAL HILL',pre:[['rin','You are standing on my blossoms.'],['goliath','Out of the way.'],['rin','Say please.','e'],['goliath','No.','l']],
+    win:[['goliath','Your blossoms will grow back.']]},
+   {op:'vex',stage:'bamboo',title:'THE SILENT GROVE',pre:[['goliath','I can hear you breathing.'],['vex','Most people cannot.'],['goliath','I was made to hear a storm through a mountain.','l'],['vex','Then listen closely.','e']],
+    win:[['vex','Your storm-thief went up. To Zenith.'],['goliath','Thank you.']]},
+   {op:'bolt',stage:'storm',title:'THE STOLEN STORM',pre:[['bolt','Big guy! They sent you all the way up here?'],['goliath','Give it back.'],['bolt','It is not a thing, it is me now. You would have to tear it out.','e'],['goliath','The forge is dying. The smiths are dying.','w'],['bolt','...Then come and take it.','l']],
+    win:[['bolt','Go on, then. Tear it out.'],['goliath','No. Walk it home. It will listen to you.']]},
+   {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','A thing of slag and orders. What does a hammer want with the sun?'],['goliath','Smiths cannot work in the dark.'],['grim','Is that all?'],['goliath','It is enough.','l']],
+    win:[['grim','Go through, forgeborn.']]},
+  ],
+  end:[['narr','He carried the storm home and set it back beneath the forge.','forge'],['narr','Then he carried the forge\'s embers to the Gate.','gate'],['goliath','Light the fires. There is work.','sun']]},
+ sol:{pro:[['narr','The High Temple kept the Dawn Flame through nine years of dusk.','dusk'],['narr','Thirty-one monks. One night. One witch.','embers'],['sol','She left me breathing so someone would remember.','e']],
+  ch:[
+   {op:'bolt',stage:'storm',title:'ZENITH',pre:[['bolt','A monk! Do monks punch?'],['sol','Only the ones who are left.','e'],['bolt','Ha! Show me.','l']],
+    win:[['sol','You are strong. You are not yet anything else.']]},
+   {op:'goliath',stage:'forge',title:'THE CRUCIBLE',pre:[['goliath','Monk. Have you seen a thief with a storm in his chest?'],['sol','I am looking for a thief of my own.'],['goliath','Then we are both looking. Only one of us goes on.','l']],
+    win:[['goliath','The witch went back to your temple. The marsh lights followed her.']]},
+   {op:'morrow',stage:'monastery',title:'THE LAST DAWN',hint:'FINISH HER WITH HUNDRED SUNS',pre:[['morrow','You came home. How sentimental.'],['sol','You have something that belongs to my brothers.'],['morrow','Your brothers knelt around a fire and prayed for the sun. For nine years.','l'],['morrow','Light is wasted on the faithful.','e'],['sol','Then let me waste it on you.']],
+    win:[['morrow','Take it, then. Take your little flame.'],['sol','It was never little.']]},
+   {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','You carry thirty-two embers, monk.'],['sol','Thirty-one. The last is mine, and I am keeping it.'],['grim','Then you will be weighed with it.','e']],
+    win:[['grim','The dawn is yours to carry, last monk.']]},
+  ],
+  end:[['narr','He carried the Dawn Flame through the Last Gate.','gate'],['narr','The first sunrise in nine years came up over the High Temple.','sun'],['sol','Wake up, brothers. It is morning.','sun']]},
+ morrow:{pro:[['narr','The lights over the Hollow Mire are embers. She has been collecting.','embers'],['morrow','Prayers never moved the sun. Enough light will.','e']],
+  ch:[
+   {op:'rin',stage:'blossom',title:'PETAL HILL',pre:[['rin','Your little lights are hanging over my hill.'],['morrow','Your hill is holding a great many embers, child.'],['rin','They are my sister\'s. You cannot have them.','e'],['morrow','Everything can be had.','l']],
+    win:[['morrow','Keep your sister\'s embers. I only wanted yours.']]},
+   {op:'ashen',stage:'dusk',title:'ASHFIELD',pre:[['ashen','You smell of the Gate, witch.'],['morrow','And you smell of it more. You went through.'],['ashen','I came back.'],['morrow','Then you know what is on the other side. Tell me.','e'],['ashen','No.']],
+    win:[['morrow','Keep your secret, general. I will go and see for myself.']]},
+   {op:'sol',stage:'monastery',title:'THE LAST DAWN',pre:[['sol','Nine years.'],['morrow','You kept count. Of course you did.'],['sol','Give it back.','e'],['morrow','Your brothers had nine years with it, and the sun never moved.','l'],['morrow','I will do in one night what they could not.']],
+    win:[['morrow','You kept one ember, boy. You should have kept it hidden.']]},
+   {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','Witch. You carry a crowd.'],['morrow','Hundreds of embers and one Dawn Flame. Heavy enough?'],['grim','Stolen things are weighed twice.','e'],['morrow','Then weigh me.','l']],
+    win:[['grim','...The Gate is open.']]},
+  ],
+  end:[['narr','She walked through the Last Gate with every light she had ever taken.','gate'],['narr','The sun rose. It rose violet.','sunv'],['morrow','Now all of them will follow the lights.','e']]},
+ grim:{pro:[['narr','At the end of the road of graves stands a gate that no one built.','gate'],['grim','One man went through my Gate and walked back out.','e'],['grim','Doors do not work that way. I am going to close this one.']],
+  ch:[
+   {op:'rin',stage:'grave',title:'HANA',pre:[['rin','You. You took my sister.','e'],['grim','She walked through. She chose.'],['rin','Then give her back!'],['grim','The Gate does not give back.','l'],['rin','It gave one back. Everyone knows it did.'],['grim','Which is why I am leaving it.']],
+    win:[['grim','Wait here, lancer. When I return, the Gate will be whole again.']]},
+   {op:'goliath',stage:'forge',title:'THE CRUCIBLE',pre:[['goliath','The Keeper left his Gate?'],['grim','Briefly. Stand aside.'],['goliath','Nothing passes the Crucible without passing me.','l']],
+    win:[['grim','Sturdy. You will be weighed another day.']]},
+   {op:'bolt',stage:'storm',title:'ZENITH',pre:[['bolt','Whoa. You are the Gate guy. Are you here for me?'],['grim','Not yet.','e'],['bolt','Then what, you want a fight?','l'],['grim','I want a road. You are standing on it.']],
+    win:[['bolt','Hey. Not yet, right? You said not yet.'],['grim','Not yet.']]},
+   {op:'ashen',stage:'dusk',title:'THE ONE WHO RETURNED',pre:[['ashen','Keeper. I wondered when you would come.'],['grim','You were weighed. You left before the scales settled.','w'],['ashen','I had a debt to collect.'],['grim','So have I.','e']],
+    win:[['grim','Come, general. The scales are waiting.']]},
+  ],
+  end:[['narr','He brought the general back, and closed the Gate behind them both.','dark'],['grim','Every door closes eventually.','e'],['narr','No one ever came back out again.','dark']]},
+ bolt:{pro:[['bolt','Lightning hit me square in the chest.','e'],['bolt','Best thing that ever happened to me. Let us see what else hits hard.','l']],
+  ch:[
+   {op:'vex',stage:'bamboo',title:'THE SILENT GROVE',pre:[['bolt','Come on out. I can see your eyes.'],['vex','No one sees my eyes.','e'],['bolt','Kind of hard to miss in the dark, lady.'],['vex','...That is fair.']],
+    win:[['bolt','Ha! You were faster. I was louder.']]},
+   {op:'sol',stage:'monastery',title:'THE HIGH TEMPLE',pre:[['sol','You carry a storm that is not yours.'],['bolt','It is mine now. Hit me and find out.','l'],['sol','The forge you left behind is dying.','e'],['bolt','...Yeah. I know.']],
+    win:[['sol','Strength is not the same as purpose.'],['bolt','Then I will find one on the way up.']]},
+   {op:'goliath',stage:'storm',title:'THE STOLEN STORM',pre:[['goliath','Found you.','l'],['bolt','You climbed all this way? You hate heights.'],['goliath','The smiths are sick. The forge is cold. Come home.','w'],['bolt','I cannot put it back! It is in me!','e'],['goliath','Then come home with it.']],
+    win:[['bolt','...Tell them I am sorry.'],['goliath','Tell them yourself.']]},
+   {op:'grim',stage:'grave',title:'THE LAST GATE',pre:[['grim','Loud one. What do you bring to the scales?'],['bolt','One storm, a lot of bruises, and a lot of apologies.'],['grim','An honest weight.','e'],['bolt','Great. Now I get to hit you.','l']],
+    win:[['grim','The Gate is open, stormfist.']]},
+  ],
+  end:[['narr','He did not go through the Gate.','gate'],['narr','He went home, and let the storm back into the forge, a little at a time.','forge'],['bolt','The sun can wait a few more days. The smiths cannot.','e']]},
+ rin:{pro:[['narr','The blossoms on Petal Hill have been falling for nine years.','embers'],['rin','Hana carried our embers to the Gate to buy back the sun. It kept her.'],['rin','I am going to get her.','e']],
+  ch:[
+   {op:'bolt',stage:'storm',title:'ZENITH',pre:[['bolt','Nice spear! Kind of big for you.'],['rin','Everyone says that. Once.','e'],['bolt','Ha! I like you.','l']],
+    win:[['rin','Once.']]},
+   {op:'morrow',stage:'marsh',title:'THE HOLLOW MIRE',pre:[['morrow','Petals in my mire. How pretty.'],['rin','Your lights have been following me since the hill.'],['morrow','They like you. Your sister\'s embers are all over you.','e'],['rin','Do not talk about her!','l']],
+    win:[['morrow','Go on to the Gate, little one. Tell it I am coming.']]},
+   {op:'ashen',stage:'dusk',title:'ASHFIELD',pre:[['rin','You. You are the one who came back out.'],['ashen','I am.'],['rin','Then you saw her. Hana. A spear, a blossom ember, stubborn.','e'],['ashen','...I saw her.'],['rin','Then you are going to tell me everything.','l']],
+    win:[['ashen','She was not afraid. She told me to go home.'],['rin','...That sounds like her.']]},
+   {op:'grim',stage:'grave',title:'HANA',pre:[['grim','Petal lancer. I told your sister the Gate does not give back.'],['rin','And I am telling you I am not asking.','e'],['grim','Then you will be weighed.','w'],['rin','Weigh this.','l']],
+    win:[['grim','...Go in. Find her. The Gate will let you out. Once.']]},
+  ],
+  end:[['narr','She went through the Last Gate carrying nothing at all.','gate'],['narr','She came back out with her sister.','sun'],['rin','Come on, Hana. The blossoms are waiting.','sun']]},
+};
+
+/* =======================================================================
+   STORY MODE — four chapters for each shadow, told between the fights in
+   drawn shots: busts cut shot-reverse-shot against the stage, extreme
+   close-ups on the eyes, low angles, narration over painted plates.
+   J / Enter moves to the next line, Esc skips the scene.
+   ======================================================================= */
+SPEAKERS.narr={name:'',col:'#9a9a9a'};
+const STORY={ch:null,i:0,pending:null};
+const LPOSE={ashen:'guard',vex:'guard',goliath:'stand',sol:'palms',morrow:'cast',grim:'stand',bolt:'guard',rin:'stand'};
+const HANA=Object.assign({},ROSTER.find(c=>c.id==='rin'),{id:'hana',name:'HANA',col:'#ffe4ec'});delete HANA._poses;
+const chOf=id=>ROSTER.find(c=>c.id===id);
+const lineDur=s=>clamp(1.5+s.length*.052,2.4,6.2);
+function storyLvl(){return clamp((GAME.diff+([-1,0,0,1][STORY.i]||0))|0,0,AIL.length-1);}
+function _ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'[]');localStorage.setItem(k,JSON.stringify(v));}catch(e){}return[];}
+function markDone(k,id){const s=_ls(k);if(!s.includes(id)){s.push(id);_ls(k,s);}}
+
+/* ---------------- backdrops ---------------- */
+function skyBack(X,st,hz){const g=X.createLinearGradient(0,hz-V.H*1.1,0,hz);for(const s of st.sky)g.addColorStop(s[0],s[1]);X.fillStyle=g;X.fillRect(0,0,V.W,hz+1);
+  X.fillStyle=st.ground[1];X.fillRect(0,hz,V.W,V.H-hz+1);fogBand(X,hz,V.H*.1,.3,st.haze);}
+/* the loaded stage through a longer lens, pushed back into its own haze */
+function stageBack(X,G,sid,o){o=o||{};const st=STAGES[sid]||STAGES.dusk;
+  if(STG&&STG.id===sid){const sv=[cam.x,cam.y,cam.z,cam.roll];cam.x=o.x||0;cam.y=o.y===undefined?-170:o.y;cam.z=o.z||1.7;cam.roll=0;
+    X.save();screenXf(X);drawStageBack(X);X.restore();G.save();screenXf(G);drawWxGlow(G);G.restore();[cam.x,cam.y,cam.z,cam.roll]=sv;}
+  else skyBack(X,st,V.H*(o.hz||.66));
+  G.save();G.globalCompositeOperation='lighter';
+  for(let i=0;i<7;i++){const x=(hash(i*4.1+(o.seed||0))*1.2-.1+(o.pan||0)*(.5+hash(i)*.5))*V.W,y=V.H*(.15+hash(i*2.3)*.5),r=V.H*(.03+hash(i*5.9)*.05);
+    G.globalAlpha=.07+hash(i*7.7)*.09;G.drawImage(glowSprite(st.haze),x-r,y-r,r*2,r*2);}G.restore();
+  X.save();X.setTransform(1,0,0,1,0,0);X.globalAlpha=o.haze===undefined?.16:o.haze;X.fillStyle=st.haze;X.fillRect(0,0,V.W,V.H);X.restore();}
+/* chest-up, head at o.hy of the frame, sized the same for every fighter */
+function drawBust(X,G,ch,x,look,o){o=o||{};const H=V.H,z=o.zoom||1,sc=H/(118*ch.h)*z;
+  X.save();G.save();X.translate(x,H*(o.hy||.36)+172/118*H*z);X.scale(sc,sc);G.setTransform(X.getTransform());
+  const f={pose:o.pose||'stand',look,hot:o.hot||.3,back:!!o.back,noGlow:o.back?1:0,still:o.still};
+  if(!o.back){X.save();G.save();G.globalCompositeOperation='destination-out';figFront(G,null,ch,Object.assign({},f,{noGlow:1}));G.restore();X.restore();}
+  if(o.rim)rimFront(X,G,ch,f,o.rim,o.rimDx||-look*1.6);else figFront(X,G,ch,f);X.restore();G.restore();}
+
+/* ---------------- painted plates for narration ---------------- */
+function sunriseDraw(X,G,u,t,ch,o){o=o||{};const W=V.W,H=V.H,hz=H*.64,v=!!o.v;
+  const sk=X.createLinearGradient(0,0,0,hz);
+  sk.addColorStop(0,mixC('#120c2a',v?'#3a2458':'#5a4a80',u));sk.addColorStop(.6,mixC(v?'#3a2060':'#5a2c4c',v?'#9a70d0':'#e89a70',u));sk.addColorStop(1,mixC(v?'#7050a0':'#d07050',v?'#f0d8ff':'#fff0c8',u));
+  X.fillStyle=sk;X.fillRect(0,0,W,hz+2);
+  const glw=v?'#b070ff':'#ffb050',disc=v?'#f6ecff':'#fff6e0',ray=v?'#c890ff':'#ffc070',sx=W*.36;
+  const sy=lerp(hz+H*.06,hz-H*.1,E.o(u)),sr=H*.08;G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.8;G.drawImage(glowSprite(glw),sx-sr*7,sy-sr*7,sr*14,sr*14);G.restore();
+  X.fillStyle=disc;X.beginPath();X.arc(sx,sy,sr,0,TAU);X.fill();
+  for(let i=0;i<9;i++){const a=-PI/2+(i-4)*.2+Math.sin(t*.3+i)*.03,L=H*1.2;G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.07*u;G.fillStyle=ray;G.beginPath();G.moveTo(sx,sy);G.lineTo(sx+Math.cos(a-.03)*L,sy+Math.sin(a-.03)*L);G.lineTo(sx+Math.cos(a+.03)*L,sy+Math.sin(a+.03)*L);G.fill();G.restore();}
+  X.fillStyle=mixC(v?'#20143a':'#2a1830',v?'#4a3070':'#6a4050',u);X.beginPath();X.moveTo(0,hz);for(let x=0;x<=W;x+=W/24){const k=x/W;X.lineTo(x,hz-H*(.05+.06*Math.abs(Math.sin(k*9+1))+.04*Math.sin(k*23)));}X.lineTo(W,hz+2);X.fill();
+  X.fillStyle='#0a0608';X.fillRect(0,hz,W,H-hz);X.beginPath();X.moveTo(W*.52,H);X.lineTo(W*.56,hz+H*.08);X.lineTo(W*.76,hz+H*.04);X.lineTo(W,hz+H*.02);X.lineTo(W,H);X.fill();
+  if(o.pagoda)pagoda(X,W*.9,H/600,3,hz+H*.03);
+  const figs=ch?[[ch,W*.66]]:[];if(o.two)figs.push([o.two,W*.6]);
+  for(const [c,x] of figs){const sc=H/430;X.save();G.save();X.translate(x,hz+H*.11);X.scale(sc,sc);G.setTransform(X.getTransform());figFront(X,G,c,{back:true,pose:'loose'});X.restore();G.restore();}
+  if(rnd()<.6)pt({x:W*.66+rnd(40,-40),y:hz+H*.05,vx:rnd(20,-20),vy:-rnd(60,20),l:rnd(3,1.5),s:rnd(3,1.5),c:o.ember||(ch?ch.col:ray),t:'ember',g:-8});
+}
+const CAST=['grim','rin','ashen','goliath','sol','vex','bolt','morrow'];
+const NARR={
+ // the sun, stopped half under the world, and the shadows standing on the rise in front of it
+ dusk(X,G,u,t){const W=V.W,H=V.H,hz=H*.63,pan=u*W*.03;
+   const sk=X.createLinearGradient(0,0,0,hz);sk.addColorStop(0,'#0c0818');sk.addColorStop(.5,'#3a1c3a');sk.addColorStop(.82,'#b0503a');sk.addColorStop(1,'#ffb26a');X.fillStyle=sk;X.fillRect(0,0,W,hz+1);
+   const sx=W*.6-pan*.4,sr=H*.11;G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.5;G.drawImage(glowSprite('#ff9a50'),sx-sr*5,hz-sr*4,sr*10,sr*8);G.restore();
+   X.fillStyle='#fff0d4';X.beginPath();X.arc(sx,hz+sr*.3,sr,PI,TAU);X.fill();
+   X.fillStyle='#2a1426';X.beginPath();X.moveTo(0,hz+1);for(let x=0;x<=W;x+=W/30){const k=(x+pan*.5)/W;X.lineTo(x,hz-H*(.02+.028*Math.abs(Math.sin(k*7+2))+.014*Math.sin(k*31)));}X.lineTo(W,hz+1);X.fill();
+   X.fillStyle='#07040a';X.fillRect(0,hz,W,H-hz);const ry=s=>(1-s)*(1-s)*(hz+H*.13)+2*(1-s)*s*(hz-H*.02)+s*s*(hz+H*.1);
+   const rise=c=>{c.beginPath();c.moveTo(0,ry(0));for(let i=1;i<=20;i++)c.lineTo(W*i/20,ry(i/20));c.lineTo(W,H);c.lineTo(0,H);c.fill();};
+   rise(X);G.save();G.globalCompositeOperation='destination-out';G.fillStyle='#000';G.fillRect(0,hz,W,H-hz);G.restore();
+   CAST.forEach((id,i)=>{const c=chOf(id),s=.12+i*.108,x=W*s-pan*1.4,y=ry(s)+H*.004,sc=H/1250;X.save();G.save();X.translate(x,y);X.scale(sc,sc);G.setTransform(X.getTransform());
+     G.save();G.globalCompositeOperation='destination-out';figFront(G,null,c,{pose:'stand',noGlow:1,t:t+i});G.restore();figFront(X,G,c,{pose:'stand',hot:.5,t:t+i});X.restore();G.restore();});},
+ // every shadow kept one: embers of every colour, and a hand that holds its own
+ embers(X,G,u,t,o){const W=V.W,H=V.H;const sk=X.createLinearGradient(0,0,0,H);sk.addColorStop(0,'#030208');sk.addColorStop(.72,'#140b1c');sk.addColorStop(1,'#2e1424');X.fillStyle=sk;X.fillRect(0,0,W,H);
+   G.save();G.globalCompositeOperation='lighter';
+   for(let i=0;i<90;i++){const d=.3+hash(i*1.7)*.7,x=(hash(i*3.3)*1.2-.1)*W+Math.sin(t*.6+i)*20*d,y=H*(1.1-((hash(i*7.9)+t*.045*d)%1)*1.3),r=H*.011*d*(1+hash(i)*.6),c=chOf(CAST[i%8]).col;
+     G.globalAlpha=.3+.45*d;G.drawImage(glowSprite(c),x-r*4,y-r*4,r*8,r*8);G.globalAlpha=.85*d;G.fillStyle=mixC(c,'#ffffff',.5);G.beginPath();G.arc(x,y,r*.5,0,TAU);G.fill();}G.restore();
+   const hx=W*.5,hy=H*(1.08-E.o(seg01(u,0,.45))*.16),s=H/170,col=o.ch?o.ch.col:'#ffb040';
+   shadowHand(X,hx,hy,s,1,false);G.save();G.globalCompositeOperation='destination-out';shadowHand(G,hx,hy,s,1,false);G.restore();
+   const ey=hy-s*95+Math.sin(t*2)*s*3,er=H*(.04+.005*Math.sin(t*5));G.save();G.globalCompositeOperation='lighter';G.drawImage(glowSprite(col),hx-er*3,ey-er*3,er*6,er*6);G.drawImage(glowSprite(col,1),hx-er*.8,ey-er*.8,er*1.6,er*1.6);G.restore();},
+ // the road of graves, and the Gate at the end of it
+ gate(X,G,u,t,o){const W=V.W,H=V.H,open=o.open?o.open(u):0,P=pcam({x:0,y:-85,z:-300+u*170,pitch:-.05,f:H*1.15}),GZ=2600,lite='#d8ffe4';
+   psky(X,P,[[0,'#020403'],[.55,'#0a1410'],[1,'#26402e']],'#040605');
+   const c0=P(0,-440,GZ);if(c0){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=Math.min(1,.45+open*.7);const r=c0[2]*(650+open*1500);G.drawImage(glowSprite('#9be88a'),c0[0]-r,c0[1]-r*.8,r*2,r*1.6);G.restore();}
+   pfill(X,P,[[-1600,0,-200],[1600,0,-200],[1600,0,GZ+200],[-1600,0,GZ+200]],'#070a08');pfill(X,P,[[-150,0,-200],[150,0,-200],[150,0,GZ],[-150,0,GZ]],'#121a15');
+   pglow(X,P,0,GZ-200,800,'#c8ffd8',.12+open*.5);fogBand(X,P.horizon,H*.16,.38,'#9be88a');
+   const items=[];
+   items.push({z:GZ,d:()=>{for(const s of[-1,1])pbox(X,P,s*380-40,s*380+40,-960,0,GZ-40,GZ+40,INK);pbox(X,P,-560,560,-1030,-960,GZ-50,GZ+50,INK);pbox(X,P,-470,470,-930,-900,GZ-30,GZ+30,INK);
+     const gap=open*640;pbox(X,P,-340,-gap/2,-880,0,GZ,GZ+24,INK);pbox(X,P,gap/2,340,-880,0,GZ,GZ+24,INK);
+     G.save();G.globalCompositeOperation='lighter';if(gap>4){G.globalAlpha=.95;pfill(G,P,[[-gap/2,0,GZ+12],[gap/2,0,GZ+12],[gap/2,-880,GZ+12],[-gap/2,-880,GZ+12]],lite);}
+     const a=P(0,-880,GZ),b=P(0,0,GZ);if(a&&b){G.globalAlpha=.9;G.strokeStyle=lite;G.lineWidth=Math.max(1.2,a[2]*6);G.beginPath();G.moveTo(a[0],a[1]);G.lineTo(b[0],b[1]);G.stroke();}G.restore();}});
+   for(let i=0;i<12;i++)for(const s of[-1,1]){const z=150+i*205,x=s*(250+hash(i*3+s)*300),h=70+hash(i*5+s)*90,w=24+hash(i*7+s)*16,cr=hash(i*9+s)>.62;
+     items.push({x,z,d:()=>{pbox(X,P,x-w,x+w,-h,0,z-8,z+8,INK);if(cr)pbox(X,P,x-w*1.9,x+w*1.9,-h*.78,-h*.64,z-6,z+6,INK);}});}
+   (o.walkers||[]).forEach((c,j)=>{const z=o.wz(u)+j*30,x=(j-((o.walkers.length-1)/2))*110;items.push({x,z,d:()=>pfig(X,G,P,c,x,z,{back:true,pose:'loose',t:t+j})});});
+   for(const it of items){const q=P(it.x||0,0,it.z);it.dd=q?q[3]:it.z;}items.sort((a,b)=>b.dd-a.dd);
+   PCUT=G;try{for(const it of items)it.d();}finally{PCUT=null;}
+   G.save();G.globalCompositeOperation='lighter';for(let i=0;i<14;i++){const x=W*hash(i*2.7)+Math.sin(t*.4+i)*30,y=H*(.45+hash(i*5.1)*.35)-((t*12+i*40)%(H*.3)),r=H*.012;G.globalAlpha=.45;G.drawImage(glowSprite('#9cff7a',1),x-r,y-r,r*2,r*2);}G.restore();},
+ // the forge, burning or going cold
+ forge(X,G,u,t,o){const W=V.W,H=V.H,heat=o.cold?lerp(.95,.3,E.io(u)):lerp(.35,1,E.io(u)),fx=W*.6,fy=H*.66,fw=H*.34,fh=H*.3;
+   X.fillStyle='#0b0604';X.fillRect(0,0,W,H);
+   G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.75*heat;G.drawImage(glowSprite('#ff7a22'),fx-fw*2.4,fy-fh*2.6,fw*4.8,fh*4.4);
+   const mg=G.createLinearGradient(0,fy-fh,0,fy);mg.addColorStop(0,'#ff5a10');mg.addColorStop(1,'#fff0b0');G.globalAlpha=.95*heat;G.fillStyle=mg;
+   G.beginPath();G.moveTo(fx-fw/2,fy);G.lineTo(fx-fw/2,fy-fh*.55);G.quadraticCurveTo(fx,fy-fh*1.3,fx+fw/2,fy-fh*.55);G.lineTo(fx+fw/2,fy);G.fill();G.restore();
+   const fl=X.createRadialGradient(fx,fy,0,fx,fy,H*.7);fl.addColorStop(0,`rgba(150,70,20,${.55*heat})`);fl.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=fl;X.fillRect(0,fy-H*.2,W,H);
+   X.fillStyle=INK;X.beginPath();X.rect(fx-fw*1.3,fy-fh*2.2,fw*2.6,fh*2.2+2);X.moveTo(fx-fw/2,fy);X.lineTo(fx-fw/2,fy-fh*.55);X.quadraticCurveTo(fx,fy-fh*1.3,fx+fw/2,fy-fh*.55);X.lineTo(fx+fw/2,fy);X.closePath();X.fill('evenodd');
+   X.fillRect(fx-fw*1.45,fy-fh*2.35,fw*2.9,fh*.18);for(let i=0;i<4;i++){const x=W*(.08+i*.26)+Math.sin(t*.7+i)*4;X.fillRect(x,0,3,H*(.18+hash(i)*.2));X.beginPath();X.arc(x+1.5,H*(.18+hash(i)*.2),7,0,TAU);X.fill();}
+   const ax=W*.3,ay=H*.86;X.beginPath();X.moveTo(ax-H*.16,ay-H*.1);X.lineTo(ax+H*.2,ay-H*.1);X.quadraticCurveTo(ax+H*.28,ay-H*.1,ax+H*.32,ay-H*.13);X.lineTo(ax+H*.1,ay-H*.05);X.lineTo(ax+H*.06,ay+H*.1);X.lineTo(ax-H*.06,ay+H*.1);X.lineTo(ax-H*.08,ay-H*.05);X.closePath();X.fill();
+   G.save();G.globalCompositeOperation='destination-out';G.fillStyle='#000';G.fillRect(ax-H*.2,ay-H*.13,H*.55,H*.3);G.restore();
+   if(o.ch){const c=o.ch,sc=H/(330*c.h);X.save();G.save();X.translate(W*.34,H*.97);X.scale(sc,sc);G.setTransform(X.getTransform());
+     G.save();G.globalCompositeOperation='destination-out';figFront(G,null,c,{pose:'stand',noGlow:1});G.restore();rimFront(X,G,c,{pose:'stand',hot:.6},'#ff9a40',1.4);X.restore();G.restore();}
+   if(rnd()<.8*heat)pt({x:fx+rnd(fw*.4,-fw*.4),y:fy-rnd(fh*.3),vx:rnd(70,-70),vy:-rnd(280,80),l:rnd(1.3,.4),s:rnd(2.4,1),c:'#ffb040',t:'spark',g:140});},
+};
+NARR.sun=(X,G,u,t,o)=>sunriseDraw(X,G,u,t,o.ch,{pagoda:o.ch&&o.ch.id==='sol',two:o.ch&&o.ch.id==='rin'?HANA:null});
+NARR.sun0=(X,G,u,t)=>sunriseDraw(X,G,u,t,null,{});
+NARR.sunv=(X,G,u,t,o)=>sunriseDraw(X,G,u,t,o.ch,{v:1});
+NARR.dark=(X,G,u,t,o)=>NARR.gate(X,G,u,t,{open:u=>.55*(1-E.io(seg01(u,.25,.85))),walkers:o.walkers,wz:u=>lerp(1900,2480,u)});
+/* the Dawn Flame as it was: the ring of monks from above */
+NARR.temple=(X,G,u)=>{const P=pcam({x:0,y:-1560,z:1100,pitch:PI/2,yaw:.15+u*.2,f:V.H*1.25}),ring=NARR._ring||(NARR._ring=monkRing());
+  templeSet(X,G,P,{fire:1,sky:NIGHT,floorLight:(c,g,P)=>pglow(c,P,0,1100,560,'#ffb040',.6),figs:ring.map(m=>({x:m.x,z:m.z,d:()=>topFig(X,P,m.x,m.z,'kneel',1,0,1100)}))});};
+
+/* ---------------- shots ---------------- */
+/* a run of lines shares one shot; each line gets its own subtitle window */
+function subsOf(lines){let t=0;return lines.map(l=>{const d=lineDur(l[1]),s=[l[0],l[1],t+.12,t+d-.06];t+=d;return s;});}
+function shotOf(subs,o){const last=subs[subs.length-1];return Object.assign({d:last[3]+.06,subs},o);}
+function bustShot(lines,ctx,k){const spk=chOf(lines[0][0])||MONK,hero=spk===ctx.hero,lis=ctx.op?(hero?ctx.op:ctx.hero):null,side=hero?-1:1,tight=!lis||k%3===2;
+  const st=STAGES[ctx.stage]||STAGES.dusk,rim=mixC(st.haze,'#ffffff',.35),sd=lis?side:-.4;
+  return shotOf(subsOf(lines),{draw(X,G,u){const W=V.W;
+    stageBack(X,G,ctx.stage,{x:sd*150+u*40*sd,y:-190,z:tight?2.1:1.8,pan:u*.02*sd,seed:k});
+    drawBust(X,G,spk,W*(.5+sd*(tight?.12:.2))-u*W*.008*sd,-Math.sign(sd),{zoom:(tight?1.3:1)*(1+u*.035),rim,rimDx:sd*1.7,hot:.35,pose:LPOSE[spk.id]==='cast'?'cast':'stand'});
+    if(lis&&!tight)drawBust(X,G,lis,W*(.5-side*.37),side,{back:true,zoom:1.6,hy:.56,rim:mixC(st.haze,'#000000',.5),rimDx:-side*1.2});}});}
+function eyesShot(lines){const spk=chOf(lines[0][0])||MONK;
+  return shotOf(subsOf(lines),{draw(X,G,u,t){const bl=Math.max(0,1-Math.abs(((t*.31)%1)-.7)*22);drawEyesClose(X,G,spk,1-bl,{zoom:1+u*.07,brow:.3});}});}
+function lowShot(lines,ctx){const spk=chOf(lines[0][0])||MONK,st=STAGES[ctx.stage]||STAGES.dusk;
+  return shotOf(subsOf(lines),{draw(X,G,u){stageBack(X,G,ctx.stage,{y:-540,z:1.15,haze:.1,hz:1.05});
+    const P=pcam({x:0,y:-10,z:-10-u*25,pitch:-.55,f:V.H*.95});PCUT=G;try{pfig(X,G,P,spk,0,210,{pose:LPOSE[spk.id],hot:.8,s:1/spk.h,rim:mixC(st.haze,'#ffffff',.4),rimDx:1.5});}finally{PCUT=null;}}});}
+function wideShot(lines,ctx){const spk=chOf(lines[0][0]),dir=spk===ctx.hero?-1:1;
+  return shotOf(subsOf(lines),{enter(){const [a,b]=FTR;a.hide=0;b.hide=0;CU.at(a,-150,0,1);CU.at(b,150,0,-1);a.hot=.4;b.hot=.4;},
+    upd(u){for(const f of FTR)f.pose=breathe(f,f.P.stance);CU.cam(lerp(-40,40,u)*dir,-125,lerp(1.22,1.32,E.io(u)),0);}});}
+function plateShot(kind,lines,ctx){const o={ch:ctx.hero};
+  if(kind==='gate'&&ctx.ending){o.walkers=[ctx.hero];o.open=u=>lerp(.12,.75,E.io(u));o.wz=u=>lerp(700,1500,u);}
+  if(kind==='dark')o.walkers=ctx.hero.id==='grim'?[chOf('ashen'),ctx.hero]:[ctx.hero];
+  if(kind==='forge'){o.ch=ctx.hero.id==='bolt'||ctx.hero.id==='goliath'?ctx.hero:chOf('goliath');o.cold=!ctx.ending;}
+  const f=NARR[kind]||NARR.dusk,sh=shotOf(subsOf(lines),{draw(X,G,u,t){f(X,G,u,t,o);}});
+  if(kind==='dark')sh.fout=1.2;return sh;}
+function vistaShot(ctx){return{d:2.8,fin:.5,enter(){for(const f of FTR)f.hide=1;},upd(u){CU.cam(lerp(-240,240,E.io(u)),-210,1.02,0);},exit(){for(const f of FTR)f.hide=0;}};}
+function cardShot(top,title,small,col,d){d=d||2.6;return{d,fin:.3,fout:.45,draw(X){X.fillStyle='#000';X.fillRect(0,0,V.W,V.H);},
+  card(u,t){const a=clamp(t*2.5,0,1)*clamp((d-t)/.45,0,1),S=US();txt(top,V.W/2,V.H/2-32*S,9,{w:600,al:'center',track:2,c:col||'#8a8a8a',a});
+    txt(title,V.W/2,V.H/2+6*S,30,{w:200,al:'center',track:2,c:'#f2ece0',a});if(small)txt(small,V.W/2,V.H/2+36*S,8.5,{w:600,al:'center',track:2,c:'#7a7a7a',a});}};}
+const PLATES=['dusk','embers','gate','sun','sun0','sunv','forge','dark','temple'];
+function storyShots(lines,ctx){const out=[];let i=0;
+  const key=l=>{const k=l[2]||'';return PLATES.includes(k)?'p:'+k:l[0]==='narr'?'p:dusk':k+':'+l[0];};
+  while(i<lines.length){let j=i+1;while(j<lines.length&&key(lines[j])===key(lines[i]))j++;const run=lines.slice(i,j),k=key(run[0]),kind=run[0][2];
+    if(k.startsWith('p:'))out.push(plateShot(k.slice(2),run,ctx));
+    else if(kind==='e')out.push(eyesShot(run));else if(kind==='l')out.push(lowShot(run,ctx));
+    else if(kind==='w'&&ctx.world)out.push(wideShot(run,ctx));else out.push(bustShot(run,ctx,out.length));
+    i=j;}
+  return out;}
+function storyCine(shots){const pad=[[110,146.8,196],[98,146.8,185],[82.4,123.5,164.8]][STORY.i%3];
+  if(shots.length)(shots[0].ev=shots[0].ev||[]).push([.05,()=>{MUS.intense=0;SFX.pad(pad,Math.min(30,shots.reduce((a,s)=>a+s.d,0)+2),.035);}]);
+  return{movie:1,story:1,shots};}
+
+/* ---------------- flow ---------------- */
+function storyBegin(ch){STORY.ch=ch;STORY.i=0;storyChapter(false);}
+function storyChapter(retry){
+  const S=STORY_OF[STORY.ch.id],c=S.ch[STORY.i],op=chOf(c.op),hero=STORY.ch,shots=[];
+  if(!retry){
+    if(STORY.i===0){const ctx={hero,op:null,stage:hero.stage};shots.push(cardShot('STORY',hero.name,hero.title.toUpperCase(),hero.col,2.4),...storyShots(PROLOGUE.concat(S.pro),ctx));}
+    const rv=rivalryOf(hero.id,op.id),ctx={hero,op,stage:c.stage,world:1};
+    shots.push(cardShot('CHAPTER '+(STORY.i+1)+(rv?'   ·   RIVAL':''),c.title,[STAGES[c.stage].name===c.title?'':STAGES[c.stage].name,c.hint||''].filter(Boolean).join('   ·   '),rv?op.col:null),vistaShot(ctx),...storyShots(c.pre,ctx));}
+  STORY.pending=shots.length?storyCine(shots):null;
+  startMatch(hero,op,c.stage,'story');
+}
+function storyAfter(w){
+  if(w.side!==0){GAME.scene='results';MENU.sel=0;return;}
+  const S=STORY_OF[STORY.ch.id],c=S.ch[STORY.i],last=STORY.i>=S.ch.length-1,hero=STORY.ch,op=chOf(c.op);
+  const shots=FTR[1].rivalDone?[]:storyShots(c.win||[],{hero,op,stage:c.stage});
+  if(last){shots.push(...storyShots(S.end,{hero,op:null,stage:c.stage,ending:1}),cardShot('ENDING',hero.name,'THANK YOU FOR PLAYING',hero.col,3.2));markDone('umbra.story',hero.id);}
+  const next=()=>{MUS.intense=1;if(last)storyFinish();else{STORY.i++;storyChapter(false);}};
+  if(shots.length){const C=storyCine(shots);C.done=next;playCine(C);}else next();
+}
+function storyFinish(){GAME.scene='title';MENU.sel=0;FTR=[];ambStop();musStop();STORY.ch=null;}
+/* the rival movies can be watched again from the lore once they have been seen */
+function theater(id){const r=RIVALS.find(r=>r.movie===id);if(!r)return;const A=chOf(r.a),B=chOf(r.d);
+  GAME.mode='theater';GAME.scene='fight';GAME.demo=false;GAME.over=false;GAME.paused=false;GAME.round=1;
+  FTR=[mkFighter(A,0,'human'),mkFighter(B,1,'cpu')];loadStage(r.stage);ambStart(r.stage);resetRound(true);GAME.fighting=false;GAME.phase='intro';
+  const C=MOVIES[id](FTR[0],FTR[1]);C.A=FTR[0];C.D=FTR[1];C.done=()=>{GAME.scene='lore';ambStop();musStop();FTR=[];MENU.sel=LOREV.sel;};playCine(C);}
+
+/* ---------------- the lore screen ---------------- */
+const LOREV={sel:0,t:0,last:-1};
+function wrapTxt(s,maxW,size,w){X.font=`${w||400} ${Math.round(size*US())}px ${UIF}`;const out=[];let line='';
+  for(const word of s.split(' ')){const tt=line?line+' '+word:word;if(X.measureText(tt).width>maxW&&line){out.push(line);line=word;}else line=tt;}if(line)out.push(line);return out;}
+function sceneLore(rdt){gameT+=rdt;const S=US(),W=V.W,H=V.H,list=[...LORE_WORLD.map(e=>e.k),...ROSTER.map(c=>c.name)],n=list.length;
+  const nv=nav();hoverMenu();const pre=LOREV.sel;
+  if(nv.up){LOREV.sel=(LOREV.sel+n-1)%n;SFX.ui();}if(nv.down){LOREV.sel=(LOREV.sel+1)%n;SFX.ui();}
+  if(MOUSE.click&&clickMenu()&&MENU.sel<n)LOREV.sel=MENU.sel;MENU.sel=LOREV.sel;
+  if(LOREV.sel!==pre||LOREV.last<0){LOREV.t=0;parts.length=0;LOREV.last=LOREV.sel;}LOREV.t+=rdt;
+  const wi=LOREV.sel<LORE_WORLD.length?LOREV.sel:-1,ch=wi<0?ROSTER[LOREV.sel-LORE_WORLD.length]:null,u=clamp(LOREV.t/14,0,1);
+  X.setTransform(1,0,0,1,0,0);X.globalAlpha=1;X.globalCompositeOperation='source-over';G.setTransform(1,0,0,1,0,0);G.clearRect(0,0,W,H);
+  if(ch){const st=STAGES[ch.stage];skyBack(X,st,H*.7);const hz=H*.7;X.fillStyle=ST_INK;X.beginPath();X.moveTo(0,hz);for(let x=0;x<=W;x+=W/28){const k=x/W;X.lineTo(x,hz-H*(.03+.04*Math.abs(Math.sin(k*6+ch.h*9))));}X.lineTo(W,H);X.lineTo(0,H);X.fill();
+    drawBust(X,G,ch,W*.76,-1,{zoom:1.05,hy:.3,rim:mixC(st.haze,'#ffffff',.35),rimDx:1.6,hot:.6,pose:LPOSE[ch.id]==='cast'?'cast':'stand'});}
+  else{const k=['dusk','embers','gate','temple'][wi];NARR[k](X,G,u,gameT,{ch:ROSTER[3],open:()=>0});}
+  updFX(rdt);drawPartsMain(X,'#222');drawPartsGlow(G);
+  X.save();X.globalCompositeOperation='lighter';X.drawImage(GL,0,0);X.restore();bloom(.8);X.drawImage(VIG,0,0,W,H);
+  const gr=X.createLinearGradient(0,0,W*.72,0);gr.addColorStop(0,'rgba(0,0,0,.92)');gr.addColorStop(.62,'rgba(0,0,0,.7)');gr.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=gr;X.fillRect(0,0,W,H);
+  txt('LORE',W*.06,H*.1,9,{w:600,track:2,c:'#8a8a96'});
+  MENU.items=[];list.forEach((it,i)=>{const on=LOREV.sel===i,y=H*.16+(i+(i>=LORE_WORLD.length?.8:0))*21*S;MENU.items.push({x:W*.06-8*S,y:y-15*S,w:200*S,h:21*S,i});
+    if(on){X.fillStyle='#fff';X.fillRect(W*.06-16*S,y-4.5*S,6*S,1.5*S);}const c=i>=LORE_WORLD.length?ROSTER[i-LORE_WORLD.length].col:'#c8b89a';
+    txt(it,W*.06,y,10,{w:on?600:400,track:2,c:on?(i>=LORE_WORLD.length?c:'#fff'):'#7a7a86'});});
+  const x=W*.3,mw=W*.36;let y=H*.2;
+  if(ch){txt(ch.name,x,y,34,{w:200,track:1});y+=20*S;txt(ch.title.toUpperCase(),x,y,9.5,{w:600,track:2,c:ch.col});y+=34*S;
+    for(const l of wrapTxt(LORE[ch.id].t,mw,12))(txt(l,x,y,12,{c:'#c4c0b8'}),y+=19*S);y+=16*S;
+    const rv=RIVALRY.filter(r=>r[0]===ch.id||r[1]===ch.id);
+    for(const r of rv){const o=chOf(r[0]===ch.id?r[1]:r[0]);txt('RIVAL',x,y,8,{w:700,track:2,c:'#77737a'});txt(o.name+'   ·   '+r[2],x+52*S,y,9,{w:600,track:2,c:o.col});y+=18*S;}
+    const mv=RIVALS.filter(r=>r.a===ch.id);if(mv.length){y+=10*S;const seen=_ls('umbra.movies');
+      for(const r of mv){const ok=seen.includes(r.movie);txt('RIVAL FINISHER',x,y,8,{w:700,track:2,c:'#77737a'});y+=20*S;txt(ok?r.name:'? ? ?',x,y,13,{w:300,track:2,c:ok?'#f2e6c8':'#77737a'});y+=19*S;
+        txt(r.hint,x,y,9.5,{c:'#9a968e'});y+=18*S;if(ok){txt('PRESS  J  TO WATCH',x,y,8.5,{w:600,track:2,c:ch.col});y+=18*S;if(nv.ok){SFX.pick();theater(r.movie);return;}}}}
+    txt('STORY  '+(_ls('umbra.story').includes(ch.id)?'COMPLETE':'—'),x,H*.88,8,{w:600,track:2,c:'#77737a'});}
+  else{const e=LORE_WORLD[wi];txt(e.k,x,y,30,{w:200,track:1});y+=40*S;for(const l of wrapTxt(e.t,mw,12.5))(txt(l,x,y,12.5,{c:'#c8c4bc'}),y+=20*S);}
+  txt('W S  BROWSE   ·   ESC / K  BACK',W/2,H-22*S,8.5,{w:500,al:'center',track:1,c:'#666'});
+  if(nv.back){SFX.ui();GAME.scene='title';MENU.sel=4;parts.length=0;LOREV.last=-1;}
+}
+/* the four chapters, shown on the select screen */
+function drawStoryPath(ch,x,y){const S=US(),s=STORY_OF[ch.id];txt('THE ROAD',x,y,8.5,{w:600,track:2,c:'#888'});
+  s.ch.forEach((c,i)=>{const o=chOf(c.op),yy=y+24*S+i*30*S,rv=rivalryOf(ch.id,o.id);txt(String(i+1),x,yy,9,{w:700,c:'#555'});txt(c.title,x+20*S,yy,11,{w:500,track:1,c:'#ddd'});
+    txt(o.name+'   ·   '+STAGES[c.stage].name+(rv?'   ·   RIVAL':''),x+20*S,yy+13*S,7.5,{w:600,track:2,c:rv?o.col:'#777'});});
+  if(_ls('umbra.story').includes(ch.id))txt('COMPLETE',x,y+24*S+4*30*S,8,{w:700,track:2,c:ch.col});}
+
+/* =======================================================================
    MAIN — input, match flow, scenes, loop.
    ======================================================================= */
 const GAME={scene:'title',mode:'cpu',fighting:false,round:1,timer:99,slow:1,phase:'',phaseT:0,ann:null,over:false,diff:1,demo:false,paused:false};
@@ -3119,12 +3869,14 @@ let PICK={p1:0,p2:1,stage:'auto',step:0,c1:0,c2:1,l1:false,l2:false};
 function startMatch(c1,c2,stageId,mode){
   GAME.mode=mode;GAME.scene='fight';GAME.demo=false;GAME.round=1;GAME.over=false;GAME.paused=false;
   FTR=[mkFighter(c1,0,'human'),mkFighter(c2,1,mode==='pvp'?'human':mode==='train'?'dummy':'cpu')];
-  FTR[1].aiLvl=GAME.diff;
+  FTR[1].aiLvl=mode==='story'?storyLvl():GAME.diff;
   loadStage(stageId);ambStart(stageId);musStart();MUS.intense=1;
   resetRound(true);
   if(mode==='train'){GAME.fighting=true;GAME.phase='fight';fightCam(0,1);return;}
   GAME.fighting=false;GAME.phase='intro';
-  introCine(()=>{beginRoundCall();});
+  // a story chapter opens on its scene instead of the stock intro
+  if(mode==='story'&&STORY.pending){const C=STORY.pending;STORY.pending=null;C.done=()=>{MUS.intense=1;resetRound(false);beginRoundCall();};playCine(C);}
+  else introCine(()=>{beginRoundCall();});
 }
 function resetRound(full){
   PROJ.length=0;parts.length=0;effs.length=0;decals.length=0;timers.length=0;CALL.length=0;hitstop=0;GAME.slow=1;FLASH=null;
@@ -3161,7 +3913,7 @@ function timeOver(){
 function endMatch(w){GAME.over=true;GAME.winner=w;setSt(w,'win',.2);
   const C={canSkip:true,shots:[{d:2.4,enter(){POST.letter=1;w.hot=1;w.st='cine';w.pose=breathe(w,w.P.win);},upd(u){const h=CU.head(w);CU.lerpCam([w.x,-150,1.3,0],[h[0]+18*w.face,h[1]+30,2.6,.04*w.face],E.io(u));w.pose=breathe(w,w.P.win);},
     glow(g){eyeFlare(g,w,clamp((CINE.t-.9)*3,0,1),220);},post(X,u){introText(w.ch.name,'WINS',clamp((u-.3)*4,0,1),w.ch.col,w.side?2:1);}}]};
-  C.A=w;C.done=()=>{GAME.scene='results';MENU.sel=0;POST.letter=0;};later(.4,()=>playCine(C));}
+  C.A=w;C.done=()=>{POST.letter=0;if(GAME.mode==='story'){storyAfter(w);return;}GAME.scene='results';MENU.sel=0;};later(.4,()=>playCine(C));}
 
 /* ---------------- training ---------------- */
 function dummyThink(f,dt){const I=f.in,o=opp(f);for(const k of['l','r','u','d','L','H','S','T','U','D'])I[k]=0;
@@ -3208,12 +3960,13 @@ function sceneTitle(rdt){
   stepFight(rdt);
   X.setTransform(1,0,0,1,0,0);X.fillStyle='rgba(2,2,4,.58)';X.fillRect(0,0,V.W,V.H);
   const S=US();drawLogo(V.W/2,V.H*.38,1);
-  const items=['VERSUS CPU','VERSUS PLAYER','TRAINING'];menuItems(items,V.W/2,V.H*.6,15,34,'center');
+  const items=['STORY','VERSUS CPU','VERSUS PLAYER','TRAINING','LORE'];menuItems(items,V.W/2,V.H*.56,15,32,'center');
   txt('A D  MOVE   ·   W  JUMP   ·   S  CROUCH   ·   J  LIGHT   ·   K  HEAVY   ·   L  SPECIAL   ·   I  THROW   ·   U  ULTIMATE   ·   HOLD BACK TO BLOCK',V.W/2,V.H-26*S,8.5,{w:500,al:'center',c:'#777784',track:1});
   txt('M  SOUND '+(AU.on?'ON':'OFF'),V.W-24*S,24*S,8.5,{w:600,al:'right',c:'#777784',track:2});
   const n=nav();hoverMenu();
   if(n.up)MENU.sel=(MENU.sel+items.length-1)%items.length,SFX.ui();if(n.down)MENU.sel=(MENU.sel+1)%items.length,SFX.ui();
-  if(n.ok||clickMenu()){SFX.pick();GAME.mode=['cpu','pvp','train'][MENU.sel];GAME.scene='select';PICK={c1:0,c2:1,step:0,l1:false,l2:false,stage:-1,opp:-1};MENU.sel=0;}
+  if(n.ok||clickMenu()){SFX.pick();if(MENU.sel===4){GAME.scene='lore';LOREV.last=-1;return;}
+    GAME.mode=['story','cpu','pvp','train'][MENU.sel];GAME.scene='select';PICK={c1:0,c2:1,step:0,l1:false,l2:false,stage:-1,opp:-1};MENU.sel=0;}
 }
 function hoverMenu(){for(const it of MENU.items)if(MOUSE.x>it.x&&MOUSE.x<it.x+it.w&&MOUSE.y>it.y&&MOUSE.y<it.y+it.h)MENU.sel=it.i;}
 function clickMenu(){if(!MOUSE.click)return false;for(const it of MENU.items)if(MOUSE.x>it.x&&MOUSE.x<it.x+it.w&&MOUSE.y>it.y&&MOUSE.y<it.y+it.h){MENU.sel=it.i;return true;}return false;}
@@ -3234,7 +3987,7 @@ function sceneSelect(rdt){
     txt(ch.name,x+cw/2,y0+18*S,10,{w:600,al:'center',track:2,c:on1||on2?'#fff':'#999'});});
   X.save();X.globalCompositeOperation='lighter';X.drawImage(GL,0,0);X.restore();bloom(.8);
   // header
-  const steps=GAME.mode==='cpu'?['CHOOSE YOUR SHADOW','CHOOSE YOUR OPPONENT','DIFFICULTY  ·  STAGE']:GAME.mode==='train'?['CHOOSE YOUR SHADOW','CHOOSE A TRAINING PARTNER','STAGE']:['CHOOSE YOUR SHADOWS','','STAGE'];
+  const story=GAME.mode==='story',steps=story?['CHOOSE YOUR SHADOW','','DIFFICULTY']:GAME.mode==='cpu'?['CHOOSE YOUR SHADOW','CHOOSE YOUR OPPONENT','DIFFICULTY  ·  STAGE']:GAME.mode==='train'?['CHOOSE YOUR SHADOW','CHOOSE A TRAINING PARTNER','STAGE']:['CHOOSE YOUR SHADOWS','','STAGE'];
   txt(steps[PICK.step],W/2,H*.08,13,{w:500,al:'center',track:2,c:'#ddd'});
   // info panel
   const info=PICK.step===1?cur2:cur;const iy=y0+chh+40*S;
@@ -3242,26 +3995,28 @@ function sceneSelect(rdt){
   txt(info.bio,W*.1,iy+70*S,11,{w:400,c:'#a8a8b4'});
   const stat=(l,v,y)=>{txt(l,W*.1,y,8.5,{w:600,track:2,c:'#888'});X.fillStyle='rgba(255,255,255,.1)';X.fillRect(W*.1+70*S,y-6*S,140*S,3*S);X.fillStyle=info.col;X.fillRect(W*.1+70*S,y-6*S,140*S*v,3*S);};
   stat('POWER',clamp((info.pow-.8)/.5,.1,1),iy+96*S);stat('SPEED',clamp((info.spd-.75)/.45,.1,1),iy+110*S);stat('HEALTH',clamp((info.hp-850)/400,.1,1),iy+124*S);
-  if(PICK.step<2)drawMoveList(info,W*.58,iy-4*S,{gap:14});
-  else{const sid=PICK.stage<0?'AUTO':STAGES[STAGE_IDS[PICK.stage]].name,items=GAME.mode==='cpu'?['DIFFICULTY   ◀  '+AIL[GAME.diff].name+'  ▶','STAGE   ◀  '+sid+'  ▶','BEGIN']:['STAGE   ◀  '+sid+'  ▶','BEGIN'];
-    menuItems(items,W*.58,iy+30*S,12,28,'left');}
+  const rows=story?['diff','go']:GAME.mode==='cpu'?['diff','stage','go']:['stage','go'];
+  if(story&&PICK.step<2)drawStoryPath(info,W*.58,iy+4*S);
+  else if(PICK.step<2)drawMoveList(info,W*.58,iy-4*S,{gap:14});
+  else{const sid=PICK.stage<0?'AUTO':STAGES[STAGE_IDS[PICK.stage]].name,lab={diff:'DIFFICULTY   ◀  '+AIL[GAME.diff].name+'  ▶',stage:'STAGE   ◀  '+sid+'  ▶',go:'BEGIN'};
+    menuItems(rows.map(r=>lab[r]),W*.58,iy+30*S,12,28,'left');}
   txt(PICK.step===2?'◀ ▶ CHANGE   ·   ENTER / J  CONFIRM   ·   ESC / K  BACK':pvp?'P1  A D + J      ·      P2  ← → + ,  (or NUMPAD 1)':'A D  CHOOSE   ·   ENTER / J  CONFIRM   ·   ESC / K  BACK',W/2,H-22*S,8.5,{w:500,al:'center',track:1,c:'#666'});
   // input
   const nv=nav();
-  if(nv.back){SFX.ui();if(PICK.step>0&&!pvp)PICK.step--;else if(pvp&&PICK.step===2){PICK.step=0;PICK.l1=PICK.l2=false;}else{GAME.scene='title';MENU.sel=0;FTR=[];}}
+  if(nv.back){SFX.ui();if(PICK.step>0&&!pvp)PICK.step=story?0:PICK.step-1;else if(pvp&&PICK.step===2){PICK.step=0;PICK.l1=PICK.l2=false;}else{GAME.scene='title';MENU.sel=0;FTR=[];}}
   if(PICK.step===0||PICK.step===1){
     const which=PICK.step===0?'c1':'c2';
     if(!pvp){if(nv.left){PICK[which]=(PICK[which]+n-1)%n;SFX.ui();}if(nv.right){PICK[which]=(PICK[which]+1)%n;SFX.ui();}
       if(MOUSE.click)for(const c of PICK.cards)if(MOUSE.x>c.x&&MOUSE.x<c.x+c.w&&MOUSE.y>c.y&&MOUSE.y<c.y+c.h){if(PICK[which]===c.i)nv.ok=1;PICK[which]=c.i;SFX.ui();}
-      if(nv.ok){SFX.pick();if(PICK.step===0){PICK.step=1;if(PICK.c2===PICK.c1)PICK.c2=(PICK.c1+1)%n;}else{PICK.step=2;MENU.sel=GAME.mode==='cpu'?2:1;}}}
+      if(nv.ok){SFX.pick();if(PICK.step===0&&story){PICK.step=2;MENU.sel=1;}else if(PICK.step===0){PICK.step=1;if(PICK.c2===PICK.c1)PICK.c2=(PICK.c1+1)%n;}else{PICK.step=2;MENU.sel=GAME.mode==='cpu'?2:1;}}}
     else{for(const c of PRESS){if(!PICK.l1){if(c==='KeyA'){PICK.c1=(PICK.c1+n-1)%n;SFX.ui();}if(c==='KeyD'){PICK.c1=(PICK.c1+1)%n;SFX.ui();}if(c==='KeyJ'){PICK.l1=true;SFX.pick();}}
         if(!PICK.l2){if(c==='ArrowLeft'){PICK.c2=(PICK.c2+n-1)%n;SFX.ui();}if(c==='ArrowRight'){PICK.c2=(PICK.c2+1)%n;SFX.ui();}if(c==='Numpad1'||c==='Comma'||c==='Enter'){PICK.l2=true;SFX.pick();}}}
       if(PICK.l1&&PICK.l2){PICK.step=2;MENU.sel=1;}}
   } else {
-    hoverMenu();const items=GAME.mode==='cpu'?3:2;if(nv.up)MENU.sel=(MENU.sel+items-1)%items;if(nv.down)MENU.sel=(MENU.sel+1)%items;
-    const row=GAME.mode==='cpu'?MENU.sel:MENU.sel+1;
+    hoverMenu();const items=rows.length;if(nv.up)MENU.sel=(MENU.sel+items-1)%items;if(nv.down)MENU.sel=(MENU.sel+1)%items;
+    const row={diff:0,stage:1,go:2}[rows[MENU.sel]];
     const chg=nv.left?-1:nv.right?1:0;if(chg){SFX.ui();if(row===0)GAME.diff=(GAME.diff+AIL.length+chg)%AIL.length;if(row===1)PICK.stage=((PICK.stage+1+chg+STAGE_IDS.length+1)%(STAGE_IDS.length+1))-1;}
-    if(nv.ok||clickMenu()){if(row===2){SFX.pick();const c1=ROSTER[PICK.c1],c2=ROSTER[PICK.c2];startMatch(c1,c2,PICK.stage<0?c2.stage:STAGE_IDS[PICK.stage],GAME.mode);}
+    if(nv.ok||clickMenu()){if(row===2&&story){SFX.pick();storyBegin(ROSTER[PICK.c1]);}else if(row===2){SFX.pick();const c1=ROSTER[PICK.c1],c2=ROSTER[PICK.c2];startMatch(c1,c2,PICK.stage<0?c2.stage:STAGE_IDS[PICK.stage],GAME.mode);}
       else if(row===0){GAME.diff=(GAME.diff+1)%AIL.length;SFX.ui();}else if(row===1){PICK.stage=((PICK.stage+2)%(STAGE_IDS.length+1))-1;SFX.ui();}}
   }
 }
@@ -3269,7 +4024,12 @@ function sceneFight(rdt){
   const nv=nav();
   if(GAME.paused){renderWorld(0,FTR);drawHud();drawPause(nv);return;}
   if(nv.pause&&!CINE&&!GAME.over){GAME.paused=true;MENU.sel=0;SFX.ui();renderWorld(0,FTR);return;}
-  if(CINE&&CINE.canSkip&&(nv.ok||MOUSE.click)&&CINE.rt>.3){const C=CINE;while(CINE===C){updCine(1);}}
+  if(CINE&&CINE.story){const C=CINE,sh=C.shots[C.i];
+    if(nv.back&&C.rt>.3){AU.skip=true;try{while(CINE===C){updCine(1);}}finally{AU.skip=false;}}
+    else if((nv.ok||MOUSE.click)&&C.t>.3){const nx=sh.subs&&sh.subs.find(s=>s[2]>C.t+.05);C.t=nx?nx[2]-.1:sh.d;}}
+  else if(CINE&&(CINE.canSkip||CINE.movie)&&(nv.ok||nv.back||MOUSE.click)&&CINE.rt>.3){const C=CINE;
+    if(C.movie&&!(C.skipArm!==undefined&&C.rt-C.skipArm<2.5))C.skipArm=C.rt;
+    else{AU.skip=true;try{while(CINE===C){updCine(1);}}finally{AU.skip=false;}}}
   if(GAME.mode==='train'){for(const c of PRESS){if(c==='Digit1'){TRAIN.dummy=(TRAIN.dummy+1)%DUMMY_MODES.length;FTR[1].ai=null;}if(c==='Digit2')TRAIN.meter=!TRAIN.meter;if(c==='KeyR'){resetRound(false);GAME.fighting=true;}}}
   stepFight(rdt);drawAnnounce();
 }
@@ -3294,8 +4054,10 @@ function sceneResults(rdt){
   txt(GAME.mode==='pvp'?(w.side?'PLAYER 2':'PLAYER 1'):(w.side?'DEFEAT':'VICTORY'),V.W*.08,V.H*.2,11,{w:600,track:2,c:w.ch.col});
   txt(w.ch.name,V.W*.08,V.H*.2+46*S,48,{w:200,track:1});
   txt('DAMAGE  '+w.stats.dmg,V.W*.08,V.H*.2+80*S,10,{w:500,track:2,c:'#aaa'});txt('BEST COMBO  '+w.stats.maxCombo,V.W*.08,V.H*.2+96*S,10,{w:500,track:2,c:'#aaa'});
-  const items=['REMATCH','CHARACTER SELECT','TITLE'];menuItems(items,V.W*.08,V.H*.58,13,30,'left');hoverMenu();
-  const nv=nav();if(nv.up)MENU.sel=(MENU.sel+2)%3;if(nv.down)MENU.sel=(MENU.sel+1)%3;
+  const story=GAME.mode==='story',items=story?['CONTINUE','GIVE UP']:['REMATCH','CHARACTER SELECT','TITLE'],ni=items.length;menuItems(items,V.W*.08,V.H*.58,13,30,'left');hoverMenu();
+  if(story)txt('CHAPTER '+(STORY.i+1)+'   ·   '+STORY_OF[STORY.ch.id].ch[STORY.i].title,V.W*.08,V.H*.2+118*S,9,{w:600,track:2,c:'#777'});
+  const nv=nav();if(nv.up)MENU.sel=(MENU.sel+ni-1)%ni;if(nv.down)MENU.sel=(MENU.sel+1)%ni;
+  if(story&&(nv.ok||clickMenu())){SFX.pick();if(MENU.sel===0)storyChapter(true);else storyFinish();return;}
   if(nv.ok||clickMenu()){SFX.pick();if(MENU.sel===0)startMatch(FTR[0].ch,FTR[1].ch,STG.id,GAME.mode);else if(MENU.sel===1){GAME.scene='select';PICK.step=0;PICK.l1=PICK.l2=false;ambStop();musStop();}else{GAME.scene='title';MENU.sel=0;FTR=[];ambStop();musStop();}}
 }
 
@@ -3307,7 +4069,7 @@ function frame(now){
   if(!QUAL.lock&&!document.hidden&&rdt>0){QUAL.ema=lerp(QUAL.ema,rdt,.04);if(QUAL.ema>1/38){QUAL.t+=rdt;if(QUAL.t>2.2&&QUAL.lvl<QUAL.scale.length-1){QUAL.lvl++;QUAL.t=0;QUAL.ema=1/50;resize();}}else QUAL.t=Math.max(0,QUAL.t-rdt);}
   if(PRESS.includes('KeyM'))auMute();
   try{
-    if(GAME.scene==='title')sceneTitle(rdt);else if(GAME.scene==='select')sceneSelect(rdt);else if(GAME.scene==='fight')sceneFight(rdt);else if(GAME.scene==='results')sceneResults(rdt);
+    if(GAME.scene==='title')sceneTitle(rdt);else if(GAME.scene==='select')sceneSelect(rdt);else if(GAME.scene==='fight')sceneFight(rdt);else if(GAME.scene==='results')sceneResults(rdt);else if(GAME.scene==='lore')sceneLore(rdt);
   }catch(e){console.error(e);}
   PRESS.length=0;MOUSE.click=0;
   requestAnimationFrame(frame);

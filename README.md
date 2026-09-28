@@ -18,9 +18,11 @@ generated shape by shape, and all audio is synthesized in the browser.
 
 | Mode | |
 |---|---|
+| **Story** | Pick a shadow and play their four chapters: a prologue, a rival, and the Keeper of the Last Gate (or, for Grim, the one man who walked back out of it). Scenes between the fights are told in drawn shots with subtitles, and each fighter has their own ending. Lose a chapter and you can continue from it. |
 | **Versus CPU** | Pick your fighter and opponent, then a difficulty: Novice, Fighter, Master or Shadow. Best of three rounds, 99-second timer. |
 | **Versus Player** | Two players on one keyboard, or with gamepads. |
 | **Training** | A dummy that stands, crouches, blocks, jumps or fights back. Health regenerates, meter can be infinite, and the last combo is shown. |
+| **Lore** | The world, the eight fighters and their rivalries. Rival finishers you have already seen can be watched again from here. |
 
 ## Controls
 
@@ -41,6 +43,7 @@ generated shape by shape, and all audio is synthesized in the browser.
 - **Throws:** press `Throw` up close. Hold back to throw behind you. Press `Throw` as you're grabbed to break it.
 - **Cancels:** lights chain into each other, into heavies and into specials. Normals and specials cancel into your ultimate.
 - **Other keys:** `Esc` / `P` pauses and shows the full move list. `M` toggles sound.
+- **Story scenes:** `J` / `Enter` shows the next line and `Esc` skips the scene. During a rival finisher, press any button twice to skip it.
 - **Gamepad:** stick or d-pad to move, `A` jump, `X` light, `Y` heavy, `B` special, `RB` throw, `LB` dash, `RT` ultimate, `Start` pause.
 
 ## Ultimates
@@ -65,6 +68,39 @@ Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
 grab-range hook and a ground eruption.
 
+## The story
+
+Nine years ago the sun stopped at the edge of the world. It has not risen and it
+has not set, and everything that lived in its light became a shadow of itself.
+Every shadow keeps one ember, the last colour it had. Carry enough embers
+through the Last Gate, the old stories say, and the sun will rise again. The
+Gate opens for one shadow at a time, and its keeper decides which.
+
+| Rivals | |
+|---|---|
+| **Sol** · **Morrow** | *The Dawn Flame.* Morrow walked into the High Temple and took the fire its thirty-one monks had kept alive through the Dusk. Sol is the one she left breathing. |
+| **Ashen** · **Vex** | *The Gates of Ashfield.* Vex was paid to open Ashfield's gates. Ashen died holding them, went through the Last Gate, and walked back out. |
+| **Bolt** · **Goliath** | *The Stolen Storm.* Bolt broke the storm out of the Crucible's forge. Goliath was made to guard it. |
+| **Rin** · **Grim** | *Hana.* Rin's sister carried Petal Hill's embers through the Gate, and it kept her. |
+| **Grim** · **Ashen** | *The One Who Returned.* Nobody comes back out of the Gate. Ashen did. |
+
+### Rival finishers
+
+Some rivalries end in a long cinematic instead of the normal ultimate. It runs
+for about 40 seconds and has subtitles, a score, and shots from every angle:
+bird's-eye, worm's-eye, over the shoulder and extreme close-up. Flashbacks are
+graded to sepia, with only the light keeping its colour.
+
+| Finisher | How to see it |
+|---|---|
+| **The Last Dawn** | As Sol, win the deciding round against Morrow with *Hundred Suns* on the High Temple stage. It works in Story, Versus CPU and Versus Player. |
+
+The angles are drawn, not modelled. The sets are laid out with a pinhole
+camera the way a background painter rules vanishing lines. The characters are
+flat drawings for each view: front, back, from above, and eyes in close-up.
+They are placed and scaled by depth. Anything standing in front of a light cuts
+itself out of the glow layer, so it reads as a silhouette against it.
+
 ## Stages
 
 Ashfield · Silent Grove · The Crucible · High Temple · Hollow Mire · The Last Gate · Zenith · Petal Hill
@@ -87,6 +123,8 @@ wisps, grave mist, rain with lightning, or blossom petals.
 - **Cinematics:** the engine plays shot lists in *story time*, with speed
   ramps for slow motion, camera moves with roll, backdrop swaps, letterboxing
   and two-tone impact frames.
+  Shots can also be drawn by hand for their own camera angle. That is how the
+  story scenes and the rival finishers get angles other than side-on.
 - **Audio:** WebAudio only. Filtered noise gives the swings and impacts,
   detuned partials the steel, and sub drops the weight. A convolution reverb
   and a quiet taiko pattern sit under the fight.
