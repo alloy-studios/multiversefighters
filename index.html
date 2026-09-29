@@ -3415,20 +3415,79 @@ function topFig(c,P,x,z,kind,s,faceX,faceZ,col){const q=P(x,0,z),q2=P(faceX,0,fa
    Each special fighter registers itself (see the guest files):
      SPECIAL.id = {kind:'limited', from:'YYYY-MM-DD', to:'YYYY-MM-DD', keep:1}
      SPECIAL.id = {kind:'unlock', need:{type:'wins'|'ults'|'diff'|'path', n, id, text}}
-   Add ?unlock to the address to try every special fighter (nothing is saved).
+   The account server checks saves against the same tables: when a special
+   fighter or a path is added or its dates change, update alloy/validator.js.
+   On your own machine (localhost, 127.0.0.1 or the file itself), add ?unlock
+   to the address to try every special fighter (nothing is saved). Anywhere
+   else it does nothing.
+   Signed in on alloy-studios.github.io, progress also syncs to the player's
+   Alloy account (see ACCOUNT SYNC below); the server checks every save with
+   alloy/validator.js.
    ======================================================================= */
 const SPECIAL={};
-const DEV_UNLOCK=/[?&]unlock\b/.test(location.search);
+const LOCAL_HOST=location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.protocol==='file:';
+const DEV_UNLOCK=LOCAL_HOST&&/[?&]unlock\b/.test(location.search);
 const SAVE={
   get(k,d){try{const v=localStorage.getItem('umbra.'+k);return v?JSON.parse(v):d;}catch(e){return d;}},
-  set(k,v){if(DEV_UNLOCK)return;try{localStorage.setItem('umbra.'+k,JSON.stringify(v));}catch(e){}}};
+  put(k,v){if(DEV_UNLOCK)return;try{localStorage.setItem('umbra.'+k,JSON.stringify(v));}catch(e){}},
+  set(k,v){this.put(k,v);SYNC.rev++;}};   // a change the game made (put is for copying the account's save in)
 const chOf=id=>ROSTER.find(c=>c.id===id);
 const inList=(k,id)=>SAVE.get(k,[]).includes(id);
-function addTo(k,id){const l=SAVE.get(k,[]);if(l.includes(id))return false;l.push(id);SAVE.set(k,l);return true;}
+// cleared paths, kept guests and unlocks are the progress that matters: send them to the account straight away
+function addTo(k,id){const l=SAVE.get(k,[]);if(l.includes(id))return false;l.push(id);SAVE.set(k,l);cloudSave(true);return true;}
+
+/* ---------------- ACCOUNT SYNC ----------------
+   Inside alloy-studios.github.io the page around the game offers AlloyAccount. Signed in, the
+   same progress follows the player to any device. Opened any other way AA is null, and the game
+   runs on its browser save alone, exactly as before.
+   The save is everything under umbra.*: stats, cleared paths, kept guests, unlocked fighters.
+   On sign-in the account's save and this browser's are merged so nothing is lost: every list
+   is the union of both and every stat the higher of the two. Nothing is written to the account
+   before that first load has answered. The server's reply to a save is what it actually kept
+   (it may have clamped something), so the game adopts it. */
+const GAME_ID='umbra';
+const AA=(()=>{try{return window.parent!==window?window.parent.AlloyAccount||null:null;}catch(_){return null;}})();
+const SYNC={on:!!AA&&!DEV_UNLOCK,ready:false,state:'',rev:0,tok:0,t:0,now:false};
+const S_LISTS=['cleared','kept','unlocked'],S_COUNTS=['wins','ults','matches'];
+const idList=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'):[];
+const numOr=(v,d)=>Number.isFinite(v)?v:d;
+function localSave(){const s=stats(),o={stats:{wins:s.wins,best:s.best,ults:s.ults,matches:s.matches}};for(const k of S_LISTS)o[k]=idList(SAVE.get(k,[]));return o;}
+function mergeSave(a,b){const sa=(a&&a.stats)||{},sb=(b&&b.stats)||{},o={stats:{}};
+  for(const k of S_COUNTS)o.stats[k]=Math.max(numOr(sa[k],0),numOr(sb[k],0));o.stats.best=Math.max(numOr(sa.best,-1),numOr(sb.best,-1));
+  for(const k of S_LISTS)o[k]=[...new Set([...idList(a&&a[k]),...idList(b&&b[k])])];return o;}
+function adoptSave(d){if(!d||typeof d!=='object')return;const s=d.stats&&typeof d.stats==='object'?d.stats:{},o=stats();
+  for(const k of S_COUNTS)o[k]=numOr(s[k],0);o.best=numOr(s.best,-1);SAVE.put('stats',o);for(const k of S_LISTS)SAVE.put(k,idList(d[k]));}
+function cloudLoad(){
+  if(!SYNC.on)return;const tok=++SYNC.tok;
+  if(!AA.user()){SYNC.ready=false;SYNC.state='guest';return;}
+  SYNC.ready=false;SYNC.state='sync';
+  Promise.resolve(AA.load(GAME_ID)).then(r=>{if(tok!==SYNC.tok)return;
+    if(!r){SYNC.state='offline';return;}                 // server unreachable: carry on with the browser save
+    const local=localSave(),m=r.data?mergeSave(r.data,local):local;
+    adoptSave(m);SYNC.ready=true;
+    if(!r.data||JSON.stringify(m)!==JSON.stringify(mergeSave(r.data,{})))cloudSave(true);   // the account is missing something this browser has
+    else SYNC.state='saved';
+  }).catch(()=>{if(tok===SYNC.tok)SYNC.state='offline';});}
+/* now: a checkpoint, sent at once. Otherwise the site batches it (one save per 20 s at most). */
+function cloudSave(now){if(!SYNC.on)return;
+  if(!SYNC.ready){if(SYNC.state==='offline'&&AA.user())cloudLoad();return;}   // the first load failed: try again, it merges and uploads
+  SYNC.now=SYNC.now||!!now;if(SYNC.t)return;
+  SYNC.t=setTimeout(()=>{SYNC.t=0;const n=SYNC.now;SYNC.now=false;cloudSend(n);},0);}   // changes made in one go leave as one save
+function cloudSend(now){
+  if(!SYNC.on||!SYNC.ready||!AA.user())return;const tok=SYNC.tok,rev=SYNC.rev;SYNC.state='sync';
+  Promise.resolve(AA.save(GAME_ID,localSave(),{now})).then(r=>{if(tok!==SYNC.tok)return;
+    if(!r||!r.ok){SYNC.state='offline';return;}
+    if(SYNC.rev===rev){adoptSave(r.data);SYNC.state='saved';}
+    else{adoptSave(mergeSave(r.data,localSave()));cloudSave(false);}   // the game moved on while this was in flight: keep both, send again
+  }).catch(()=>{if(tok===SYNC.tok)SYNC.state='offline';});}
+if(SYNC.on){SYNC.state='sync';Promise.resolve(AA.ready).then(cloudLoad,()=>{SYNC.state='offline';});try{AA.onChange(cloudLoad);}catch(e){}}
+/* one small line of sync state for the title and results screens */
+function syncNote(){return !SYNC.on?'':SYNC.state==='saved'?'SAVED TO YOUR ALLOY ACCOUNT':SYNC.state==='guest'?'SIGN IN TO KEEP YOUR PROGRESS':
+  SYNC.state==='offline'?'CAN\'T REACH YOUR ALLOY ACCOUNT  ·  SAVED ON THIS DEVICE':'SYNCING WITH YOUR ALLOY ACCOUNT';}
 
 /* ---------------- play record ---------------- */
 function stats(){return Object.assign({wins:0,best:-1,ults:0,matches:0},SAVE.get('stats',{}));}
-function statAdd(fn){if(GAME.demo)return;const s=stats();fn(s);SAVE.set('stats',s);checkUnlocks();}
+function statAdd(fn){if(GAME.demo)return;const s=stats();fn(s);SAVE.set('stats',s);checkUnlocks();cloudSave(false);}
 function needMet(n){const s=stats();return n.type==='wins'?s.wins>=n.n:n.type==='ults'?s.ults>=n.n:n.type==='diff'?s.best>=n.n:n.type==='path'?inList('cleared',n.id):false;}
 function needProg(n){const s=stats();return n.type==='wins'?Math.min(s.wins,n.n)+' / '+n.n:n.type==='ults'?Math.min(s.ults,n.n)+' / '+n.n:'';}
 function checkUnlocks(){for(const id in SPECIAL){const sp=SPECIAL[id],c=chOf(id);if(c&&sp.kind==='unlock'&&needMet(sp.need)&&addTo('unlocked',id))toast('NEW FIGHTER UNLOCKED',c.name,c.col);}}
@@ -4438,6 +4497,7 @@ function sceneTitle(rdt){
       txt(st.note+(sp.keep?st.kept?'   ·   YOURS TO KEEP':'   ·   CLEAR THE PATH TO KEEP '+ev.name:''),40*S,86*S+y,8,{w:600,track:2,c:'#9a9aa8'});});}
   txt('A D  MOVE   ·   W  JUMP   ·   S  CROUCH   ·   J  LIGHT   ·   K  HEAVY   ·   L  SPECIAL   ·   I  THROW   ·   U  ULTIMATE   ·   HOLD BACK TO BLOCK',V.W/2,V.H-26*S,8.5,{w:500,al:'center',c:'#777784',track:1});
   txt('M  SOUND '+(AU.on?'ON':'OFF'),V.W-24*S,24*S,8.5,{w:600,al:'right',c:'#777784',track:2});
+  const sn=syncNote();if(sn)txt(sn,V.W-24*S,40*S,7.5,{w:600,al:'right',c:'#5f5f6c',track:2});
   const n=nav();hoverMenu();
   if(n.up)MENU.sel=(MENU.sel+items.length-1)%items.length,SFX.ui();if(n.down)MENU.sel=(MENU.sel+1)%items.length,SFX.ui();
   if(n.ok||clickMenu()){SFX.pick();if(MENU.sel===0){GAME.scene='paths';PSCR.row=-1;return;}
@@ -4536,6 +4596,7 @@ function sceneResults(rdt){
   txt('DAMAGE  '+w.stats.dmg,V.W*.08,V.H*.2+80*S,10,{w:500,track:2,c:'#aaa'});txt('BEST COMBO  '+w.stats.maxCombo,V.W*.08,V.H*.2+96*S,10,{w:500,track:2,c:'#aaa'});
   const path=GAME.mode==='path',items=path?['CONTINUE','GIVE UP']:['REMATCH','CHARACTER SELECT','TITLE'],ni=items.length;menuItems(items,V.W*.08,V.H*.58,13,30,'left');hoverMenu();
   if(path)txt('FIGHT '+(PATH.i+1)+' OF '+PATHS[PATH.id].fights.length+'   ·   '+PATHS[PATH.id].title,V.W*.08,V.H*.2+118*S,9,{w:600,track:2,c:'#777'});
+  const sn=syncNote();if(sn)txt(sn,V.W*.08,V.H-28*S,8,{w:600,track:2,c:'#6a6a76'});
   const nv=nav();if(nv.up)MENU.sel=(MENU.sel+ni-1)%ni;if(nv.down)MENU.sel=(MENU.sel+1)%ni;
   if(path&&(nv.ok||clickMenu())){SFX.pick();if(MENU.sel===0)pathFight(true);else pathFinish();return;}
   if(nv.ok||clickMenu()){SFX.pick();if(MENU.sel===0)startMatch(FTR[0].ch,FTR[1].ch,STG.id,GAME.mode);else if(MENU.sel===1){GAME.scene='select';PICK.step=0;PICK.l1=PICK.l2=false;ambStop();musStop();}else{GAME.scene='title';MENU.sel=0;FTR=[];ambStop();musStop();}}

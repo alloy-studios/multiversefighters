@@ -83,8 +83,14 @@ Some fighters are not on the roster all the time.
   When you earn one, a notice pops up and they stay unlocked. There are none
   yet; the first one is on the way.
 
-Progress is saved in your browser. To try every special fighter without
-saving anything, add `?unlock` to the address, e.g. `index.html?unlock`.
+Progress is saved in your browser. Played on
+[alloy-studios.github.io/umbra](https://alloy-studios.github.io/umbra/) while
+signed in to an Alloy account, it also follows you to any device (see
+[Alloy accounts](#alloy-accounts)).
+
+To try every special fighter without saving anything, add `?unlock` to the
+address, e.g. `index.html?unlock`. It only works on your own machine (opened
+as a file, or from `localhost` / `127.0.0.1`); anywhere else it does nothing.
 
 ### GOJO: The Strongest
 
@@ -125,6 +131,33 @@ The event dates are in `index.html`: search for `SPECIAL.gojo` or
 `SPECIAL.goku`. `from` is the first day and `to` is the day after the last
 (local dates). Events can overlap; the title screen lists every one that is
 on. Remove an entry to make that fighter permanent.
+
+## Alloy accounts
+
+UMBRA runs on [alloy-studios.github.io](https://alloy-studios.github.io/umbra/)
+under the id `umbra`, and syncs its save to the player's Alloy account:
+
+- **What syncs:** everything the game keeps under `umbra.*` in localStorage:
+  your record (wins, ultimates, hardest difficulty beaten), cleared paths, kept
+  limited guests and unlocked fighters.
+- **On sign-in** the account's save and the browser's are merged, so nothing is
+  lost: every list is the union of both and every count the higher of the two.
+  Nothing is written to the account before that first load has answered.
+- **Saving:** clearing a path, keeping a guest or unlocking a fighter is sent at
+  once; wins and ultimates go out with the site's routine batching. The game
+  adopts whatever the server replies with.
+- **Status:** a small line on the title and results screens says whether
+  progress is saved to the account, syncing, or that signing in would keep it.
+- **Opened any other way** (as a file, from its own repo) there is no account,
+  and the game runs on its browser save exactly as before.
+
+The server checks every save with [`alloy/validator.js`](alloy/validator.js).
+Every field is cleaned and clamped, never rejected. Wins and ultimates can only
+rise as fast as the game's own round timers and unskippable cutscenes allow (the
+working is in the file). A limited guest is only kept if the server's own clock
+is inside that fighter's event window, whatever the player's clock says. When a
+special fighter or a path is added to the game, add it to the tables at the top
+of the validator too.
 
 ## Stages
 
