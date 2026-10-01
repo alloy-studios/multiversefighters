@@ -2039,6 +2039,7 @@ function slashLine(x,y,an,len,col,life,w){
 }
 function hitFX(x,y,dir,col,pow,kind){
   const big=pow>1;
+  if(kind==='rasen'){sparks(x,y,big?14:5,'#bfe8ff',big?620:340,undefined,0,big?2.4:1.6,.22);if(big){ring(x,y,'#7fd0ff',10,130,.32,5);ring(x,y,'#ffffff',6,70,.2,3);}ink(x,y,big?8:2,dir,big?460:240);return;}
   if(kind==='blue'){ring(x,y,'#9cc4ff',44,5,.16,2.5);sparks(x,y,big?10:5,'#bcd8ff',380,undefined,0,2,.25);ink(x,y,big?10:4,dir,300);return;}
   burstFX(x,y,dir,col,pow);
   sparks(x,y,big?22:12,col,big?900:620,dir>0?0:PI,1.1,big?3.6:2.8,.4);
@@ -4667,7 +4668,7 @@ function substitute(g,a,pt,proj){
  // RASENGAN — in fast with the sphere out in front, grinding, then it throws you
  S:{cls:'S',d:.66,k:[[0,'stance'],[.1,GP({fx:[22,-32],y:22,lean:.1,aF:[.9,1.6,0],gF:1,aB:[1.0,1.5,0],gB:1}),'o'],[.2,palm,'s'],[.46,palm,'l'],[.66,'stance','io']],
    rm:[[0,0],[.1,0],[.2,110,0,'s'],[.46,120],[.66,124]],hot:[.08,.5],
-   hits:[H_(.18,.38,{seg:'aF',r:24,dmg:11,multi:.07,hs:.32,kb:12,stop:.03,fx:'palm'}),H_(.4,.46,{seg:'aF',r:28,dmg:46,kb:520,lift:300,kd:1,hs:.6,stop:.1,fx:'palm'})],
+   hits:[H_(.18,.38,{seg:'aF',r:24,dmg:11,multi:.07,hs:.32,kb:12,stop:.03,fx:'rasen'}),H_(.4,.46,{seg:'aF',r:28,dmg:46,kb:520,lift:300,kd:1,hs:.6,stop:.1,fx:'rasen'})],
    on:[[.04,f=>{SFX.charge&&SFX.charge(.4);effs.push({t:0,l:.5,glow:1,d(c,p){if(f.st!=='move'||f.mk!=='S')return;const h=trailSeg(f)[1];rasenganFX(c,h[0]+12*f.face,h[1],lerp(8,22,E.o(Math.min(1,p*3))),gameT,1);}});}],
        [.4,f=>{if(f.landed){const h=trailSeg(f)[1];ring(h[0],h[1],NARUTO_RS,10,140,.4,6);ring(h[0],h[1],'#ffffff',6,80,.25,3);SFX.boom&&SFX.boom(.6);}}]]},
  // SHADOW CLONES — the seal, a puff of smoke, and two of him running in
@@ -4696,12 +4697,12 @@ function rasenCut(A,D){const col=A.ch.col,RS=NARUTO_RS;
  const clone=(x,face)=>{const c=puppet(A.ch,A.side);c.x=x;c.y=0;c.face=face;c.pose=copyPose(c.P.stance);c.hot=.6;CINE.extra.push(c);poof(x,-90,1.2);return c;};
  const gone=c=>{const i=CINE.extra.indexOf(c);if(i>=0){CINE.extra.splice(i,1);poof(c.x,c.y-90,1.1);}};
  return{title:'RASENGAN',dmg:340,hits:12,impCol:RS,shots:[
-  // 1 — the seal: two fingers of each hand crossed
+  // 1 — the seal, his hands together in front of him; then smoke
   {d:1.1,draw(X,G,u,t){const W=V.W,H=V.H;stageBack(X,G,STG.id,{y:-220,z:2.2,haze:.1});X.fillStyle='rgba(0,0,0,.5)';X.fillRect(0,0,W,H);
-     drawBust(X,G,A.ch,W*.36,0,{zoom:1.25*(1+u*.04),hy:.33,hot:.2,rim:mixC(col,'#ffffff',.35),rimDx:-1.5});
-     const hx=W*.62,hy=H*(1.04-E.o(seg01(u,0,.35))*.2),s=H/260,rim=mixC(col,'#ffffff',.35);
-     signCut(X,G,hx,hy,s,-.1,rim);signCut(X,G,hx+37*s,hy-34*s,s,-1.25,rim);
-     const p=seg01(u,.72,1);if(p>0){X.save();X.fillStyle='#d9d2c4';for(let i=0;i<14;i++){const an=hash(i*2.3)*TAU,d=H*(.05+hash(i)*.25)*p,r=H*(.06+hash(i*3.1)*.08)*(.5+p);X.globalAlpha=Math.min(1,p*2)*.9;X.beginPath();X.arc(hx+Math.cos(an)*d,hy-H*.18+Math.sin(an)*d,r,0,TAU);X.fill();}X.restore();}},
+     const k=E.o(seg01(u,0,.3)),r=sil(X,G,A.ch,W*.5,H*1.42,H/128*(1+u*.04),{pose:'stand',over:{L:[lerp(.2,.42,k),lerp(.2,2.15,k)],R:[lerp(.2,.42,k),lerp(.2,2.15,k)]},hot:.15,rim:mixC(col,'#ffffff',.35),rimDx:1.4,t});
+     const hx=(r.hands[0][0]+r.hands[1][0])/2,hy=(r.hands[0][1]+r.hands[1][1])/2;
+     if(k>=1&&u<.72){G.save();G.globalCompositeOperation='lighter';G.globalAlpha=.4+.3*Math.sin(t*30);G.drawImage(glowSprite(col),hx-H*.12,hy-H*.12,H*.24,H*.24);G.restore();}
+     const p=seg01(u,.72,1);if(p>0){X.save();X.fillStyle='#d9d2c4';for(let i=0;i<16;i++){const an=hash(i*2.3)*TAU,d=H*(.06+hash(i)*.32)*p,rr=H*(.07+hash(i*3.1)*.09)*(.5+p);X.globalAlpha=Math.min(1,p*2)*.92;X.beginPath();X.arc(hx+Math.cos(an)*d,hy-H*.1+Math.sin(an)*d,rr,0,TAU);X.fill();}X.restore();}},
    ev:[[.1,()=>tn(.3,{w:'triangle',f0:600,f1:900,g:.04})],[.75,()=>nz(.4,{type:'lowpass',f0:1800,f1:300,g:.2})]]},
   // 2 — smoke everywhere, and when it clears there are five of him
   {d:1.2,bg:bgStageTint('#020408',.35),
