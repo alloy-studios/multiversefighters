@@ -64,6 +64,8 @@ exclamation text. Each fighter has one:
 | **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, a whirlwind of petals pins you, and she dashes straight through it |
 | **GOJO** | The Strongest *(limited time)* | none | *Hollow Purple*: the blindfold comes down, Blue forms in one hand and Red in the other, and he brings them together. What he lets go gouges a burning trench through the stage and goes off somewhere far out of sight. Below 35% health it becomes *Domain Expansion: Infinite Void* |
 | **GOKU** | Ultra Instinct *(limited time)* | open hand | *Kamehameha*: you swing at him again and again and never touch him. One palm into the gap, a flurry from every side, then he vanishes, reappears high above you, and drives you into the ground with a beam |
+| **YUJI** | The Vessel *(limited time)* | fists | *Black Flash*: a jab, a cross, then a punch that lands in the same instant as his cursed energy and turns the world black and red. He follows them up and does it again from above |
+| **NARUTO** | The Loudest Ninja *(limited time)* | none | *Rasengan*: smoke, and four more of him. They kick you into the sky one after another, he forms a spinning sphere above you with a clone's help, and drives it into you all the way down into the ground |
 
 Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
@@ -127,10 +129,43 @@ blocks.
 **His path, *A Good Fight*:** something falls out of the sky over the
 monastery, and it wants a fight: Sol, Bolt, Goliath and Grim.
 
-The event dates are in `index.html`: search for `SPECIAL.gojo` or
-`SPECIAL.goku`. `from` is the first day and `to` is the day after the last
+### YUJI: The Vessel
+
+*Limited time: 1 October to 15 November 2026.* He fights with his fists.
+
+| Input | Move |
+|---|---|
+| Any punch | *Black Flash*: a punch can land in the same instant as his cursed energy and hit two and a half times as hard, with the frame flashing black and red. The longer his combo and the more Black Flashes he has already landed this round, the likelier the next one is |
+| Light chain, heavy, overhead, low, sweep, air attacks | Fast boxing and kicks |
+| Special | *Divergent Fist*: the punch lands, and his cursed energy lands a beat later for a second hit that knocks you away |
+| → + Special | *Manji Kick*: in fast with a spinning kick |
+| ← + Special | *Rising Knee*: straight up, invincible on startup |
+| Ultimate | *Black Flash* |
+
+**His path, *A Proper Death*:** a kid with a hood under his collar goes looking
+for whatever keeps making the shadows: Ashen, Morrow, Vex and Grim.
+
+### NARUTO: The Loudest Ninja
+
+*Limited time: 1 October to 15 November 2026.* He never fights alone.
+
+| Input | Move |
+|---|---|
+| Light chain, heavy, overhead, low, sweep, air attacks | Punches and kicks from a low ninja stance |
+| Special | *Rasengan*: in fast with a spinning sphere that grinds, then throws you |
+| → + Special | *Shadow Clones*: a hand seal, a puff of smoke, and two of him run in. Each hits once and vanishes. Two at a time |
+| ← + Special | *Substitution*: hit him now and you hit a log; he is already behind you, kicking. Projectiles just hit the log |
+| Ultimate | *Rasengan* |
+
+**His path, *The Long Way Round*:** a loud kid in a headband arrives in a puff
+of smoke and decides to beat everyone and then be friends: Vex, Rin, Bolt and
+Goliath.
+
+The event dates are in `index.html`: search for `SPECIAL.gojo`,
+`SPECIAL.goku`, `SPECIAL.yuji` or `SPECIAL.naruto`. `from` is the first day and `to` is the day after the last
 (local dates). Events can overlap; the title screen lists every one that is
-on. Remove an entry to make that fighter permanent.
+on (three or more are listed compactly). Remove an entry to make that fighter
+permanent, and keep `alloy/validator.js` in step.
 
 ## Alloy accounts
 
