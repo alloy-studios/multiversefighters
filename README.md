@@ -56,16 +56,16 @@ exclamation text. Each fighter has one:
 |---|---|---|---|
 | **ASHEN** | The Crimson Revenant | odachi | *Crimson Requiem*: time stops and the world drains to grey while eight red cuts hang in the air around you, then colour floods back as they all bloom at once |
 | **VEX** | Blade of the Silent Moon | twin daggers | *Moonless Night*: the light dies until only her eyes remain, and each cut is lit for a single frame |
-| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he slams you skull-first into the floor, the cracks run molten, and fire bursts from every one of them |
+| **GOLIATH** | Forgeborn Juggernaut | forge hammer | *Forgefall*: he lifts you by the throat, slams you skull-first into the floor, the cracks run molten, and fire bursts from every one of them |
 | **SOL** | The Last Monk | open hand | *Hundred Suns*: a storm of palms as light breaks out behind him, then a sun drawn between his hands carries you across the ground |
 | **MORROW** | Witch of the Hollow Mire | hex staff | *Hollow Grasp*: hands of shadow climb out of the swamp mist and drag you into her sigil |
 | **GRIM** | Keeper of the Last Gate | scythe | *The Last Gate*: a gate grows out of the earth and opens, and he reaps your shadow into it |
 | **BOLT** | Stormfist | storm gauntlets | *Stormbreaker*: a rush cut like a boxing highlight reel, then lightning strikes his raised fist and he drives it straight through you |
-| **RIN** | Petal Lancer | spear | *Thousand Petals*: the spear becomes a wheel of cuts, a whirlwind of petals pins you, and she dashes straight through it |
+| **RIN** | Petal Lancer | spear | *Thousand Petals*: a barrage of thrusts, each at a different height, then a whirlwind of petals pins you and she dashes straight through it |
 | **GOJO** | The Strongest *(limited time)* | none | *Hollow Purple*: the blindfold comes down, Blue forms in one hand and Red in the other, and he brings them together. What he lets go gouges a burning trench through the stage and goes off somewhere far out of sight. Below 35% health it becomes *Domain Expansion: Infinite Void* |
 | **GOKU** | Ultra Instinct *(limited time)* | open hand | *Kamehameha*: you swing at him again and again and never touch him. One palm into the gap, a flurry from every side, then he vanishes, reappears high above you, and drives you into the ground with a beam |
 | **YUJI** | The Vessel *(limited time)* | fists | *Black Flash*: a jab, a cross, then a punch that lands in the same instant as his cursed energy and turns the world black and red. He follows them up and does it again from above |
-| **NARUTO** | The Loudest Ninja *(limited time)* | none | *Rasengan*: smoke, and four more of him. They kick you into the sky one after another, he forms a spinning sphere above you with a clone's help, and drives it into you all the way down into the ground |
+| **NARUTO** | The Loudest Ninja *(limited time)* | none | *Rasengan*: smoke, and four more of him. They kick you into the sky one after another, he forms a spinning sphere above you with a clone's help, dives, and rides you all the way down into the ground |
 
 Each fighter also has a three-hit light chain, heavy, overhead, low and sweep,
 air attacks, a throw, and three specials: projectiles, rushes, anti-airs, a
@@ -216,6 +216,10 @@ wisps, grave mist, rain with lightning, or blossom petals.
 - **Cinematics:** the engine plays shot lists in *story time*, with speed
   ramps for slow motion, camera moves with roll, backdrop swaps, letterboxing
   and two-tone impact frames.
+  Every body in a shot also gets secondary motion on top of its key poses:
+  a body knocked flying rolls and flails, a hit lands as a recoil, a landing
+  gives, and a fighter holding still breathes and shifts their weight. The
+  same layer runs in a fight, on hits, knockdowns and throws.
   Shots can also be drawn by hand for their own camera angle. That is how the
   path scenes, Gojo's ultimates and Goku's close-ups get angles other than side-on. The angles
   are drawn, not modelled: sets are laid out with a pinhole camera the way a
