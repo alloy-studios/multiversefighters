@@ -20,10 +20,24 @@ generated shape by shape, and all audio is synthesized in the browser.
 |---|---|
 | **Paths** | Every special fighter has a path: four fights in a row, with a few lines before and after each one. The fights get harder as you go. Lose one and you can continue from it. |
 | **Versus CPU** | Pick your fighter and opponent, then a difficulty: Novice, Fighter, Master or Shadow. Best of three rounds, 99-second timer. |
-| **Versus Player** | Two players on one keyboard, or with gamepads. |
+| **Versus Player** | Two players on one keyboard, or with gamepads. Each player's keys can be changed under **Controls**. |
 | **Training** | A dummy that stands, crouches, blocks, jumps or fights back. Health regenerates, meter can be infinite, and the last combo is shown. |
 
 ## Controls
+
+Every action can be put on any key, separately for each player, under
+**CONTROLS** on the title screen or in the pause menu. Pick an action and
+press the new key. If another action already has that key, the two swap.
+The choice is saved on this device (`umbra.keys`). Two ready-made layouts:
+
+- **One player** (the default, below): the whole keyboard to yourself.
+- **Two on one keyboard:** each player gets their own half. Player 1 uses
+  `W` `A` `S` `D` to move, `F` `G` `H` for light, heavy and special, `R` to
+  throw, `T` for the ultimate and left `Shift` to dash. Player 2 uses the arrows to
+  move, `K` `L` `;` for light, heavy and special, `O` to throw, `P` for the
+  ultimate and `/` to dash.
+
+Default keys:
 
 | | Player 1 | Player 2 |
 |---|---|---|
@@ -41,7 +55,7 @@ generated shape by shape, and all audio is synthesized in the browser.
 - **Specials:** `Special`, `→ + Special` (rush) and `← + Special` (rising anti-air, invincible on startup).
 - **Throws:** press `Throw` up close. Hold back to throw behind you. Press `Throw` as you're grabbed to break it.
 - **Cancels:** lights chain into each other, into heavies and into specials. Normals and specials cancel into your ultimate.
-- **Other keys:** `Esc` / `P` pauses and shows the full move list. `M` toggles sound.
+- **Other keys:** `Esc` / `P` pauses and shows the full move list. `M` toggles sound. If a player puts an action on `P` or `M`, that key does the action in a fight instead.
 - **Path scenes:** `J` / `Enter` shows the next line and `Esc` skips the scene.
 - **Gamepad:** stick or d-pad to move, `A` jump, `X` light, `Y` heavy, `B` special, `RB` throw, `LB` dash, `RT` ultimate, `Start` pause.
 
